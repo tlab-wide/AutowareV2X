@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="autoware_v2x" exec="autoware_v2x_node" namespace="v2x" output="screen" emulate_tty="true" />
+</launch>
