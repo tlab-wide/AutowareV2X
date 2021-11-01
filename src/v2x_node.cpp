@@ -1,4 +1,4 @@
-#include "autoware_v2x/cpm_sender.hpp"
+#include "autoware_v2x/v2x_node.hpp"
 #include "autoware_v2x/time_trigger.hpp"
 #include "autoware_v2x/router_context.hpp"
 #include "autoware_v2x/positioning.hpp"
