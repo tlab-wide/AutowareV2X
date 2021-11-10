@@ -39,8 +39,8 @@ private:
         double orientation_y;
         double orientation_z;
         double orientation_w;
-        double xDistance;
-        double yDistance;
+        int xDistance;
+        int yDistance;
         double xSpeed;
         double ySpeed;
         vanetza::PositionFix position;

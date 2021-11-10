@@ -33,67 +33,12 @@ namespace v2x
     node_(node),
     tf_received_(false),
     cp_started_(false)
-    // io_service_(),
-    // trigger_(io_service_),
-    // runtime_(new Runtime(Clock::at(boost::posix_time::microsec_clock::universal_time()))),
-    // device_name_("wlp4s0"),
-    // device_(device_name_),
-    // mac_address_(device_.address()),
-    // link_layer_(create_link_layer(io_service_, device_, "ethernet")),
-    // positioning_(create_position_provider(io_service_, trigger_.runtime())),
-    // security_(create_security_entity(trigger_.runtime(), *positioning_)),
-    // mib_(),
-    // cp_(new CpmApplication(node_, trigger_.runtime())),
-    // context_(mib_, trigger_, *positioning_, security_.get()),
-    // app_()
   {
-
-    // device_name_ = "wlp4s0";
-    // device_(device_name_);
-    // mac_address_ = device_.address();
-
-    // std::stringstream sout;
-    // sout << mac_address_;
-    // RCLCPP_INFO(node_->get_logger(), "MAC Address: '%s'", sout.str().c_str());
-
-    // trigger_(io_service_);
-
-    // link_layer_ = create_link_layer(io_service_, device_, "ethernet");
-    // mib_.itsGnLocalGnAddr.mid(mac_address_);
-    // mib_.itsGnLocalGnAddr.is_manually_configured(true);
-    // mib_.itsGnLocalAddrConfMethod = geonet::AddrConfMethod::Managed;
-    // mib_.itsGnSecurity = false;
-    // mib_.itsGnProtocolVersion = 1;
-
-    // context_(mib_, trigger_, *positioning_, security_.get()),
-    // context_.router_.set_address(mib_.itsGnLocalGnAddr);
-    // context_.updateMIB(mib_);
-
-    // positioning_ = create_position_provider(io_service_, trigger_.runtime());
-    // security_ = create_security_entity(trigger_.runtime(), *positioning_);
-
-    // RouterContext context_(mib_, trigger_, *positioning_, security_.get());
-    // RouterContext context_(mib_, trigger_, *positioning_, security_.get());
-    // context_.set_link_layer(link_layer_.get());
-
-    // std::unique_ptr<CpmApplication> cp_ { new CpmApplication(this) };
-    // app_ = std::move(cp_);
-
-    // context_.enable(cp_.get());
-
-
-    // io_service_.run();
-    // boost::thread(boost::bind(&boost::asio::io_service::run, &io_service_));
-
-    // // Print MAC Address to logger
-    // std::stringstream sout;
-    // sout << mac_address;
-    // RCLCPP_INFO(get_logger(), "MAC Address: '%s'", sout.str().c_str());
   }
 
   void V2XApp::objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
     RCLCPP_INFO(node_->get_logger(), "V2XApp: msg received");
-    if (tf_received_) {
+    if (tf_received_ && cp_started_) {
       cp->updateObjectsStack(msg);
     }
   }
@@ -165,7 +110,6 @@ namespace v2x
     mib.itsGnSecurity = false;
     mib.itsGnProtocolVersion = 1;
 
-    // context_.updateMIB(mib_);
     auto link_layer =  create_link_layer(io_service, device, "ethernet");
     auto positioning = create_position_provider(io_service, trigger.runtime());
     auto security = create_security_entity(trigger.runtime(), *positioning);
@@ -175,7 +119,6 @@ namespace v2x
 
     cp = new CpmApplication(node_, trigger.runtime());
 
-    // context.enable(cp_.get());
     context.enable(cp);
 
     cp_started_ = true;
