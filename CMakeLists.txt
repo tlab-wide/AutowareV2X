@@ -32,6 +32,7 @@ include_directories(
 
 ament_auto_add_library(autoware_v2x SHARED
   src/v2x_node.cpp
+  src/v2x_app.cpp
   src/application.cpp
   src/cpm_application.cpp
   src/ethernet_device.cpp
