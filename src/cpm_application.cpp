@@ -17,23 +17,22 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-// This is a very simple application that sends BTP-B messages with the content 0xc0ffee.
-
 using namespace vanetza;
 using namespace vanetza::facilities;
 using namespace std::chrono;
 
-CpmApplication::CpmApplication(rclcpp::Node *node, Runtime &rt) : node_(node),
-                                                                  runtime_(rt),
-                                                                  ego_x_(0),
-                                                                  ego_y_(0),
-                                                                  ego_lat_(0),
-                                                                  ego_lon_(0),
-                                                                  ego_altitude_(0),
-                                                                  ego_heading_(0),
-                                                                  generationDeltaTime_(0),
-                                                                  updating_objects_stack_(false),
-                                                                  sending_(false)
+CpmApplication::CpmApplication(rclcpp::Node *node, Runtime &rt) : 
+  node_(node),
+  runtime_(rt),
+  ego_x_(0),
+  ego_y_(0),
+  ego_lat_(0),
+  ego_lon_(0),
+  ego_altitude_(0),
+  ego_heading_(0),
+  generationDeltaTime_(0),
+  updating_objects_stack_(false),
+  sending_(false)
 {
   RCLCPP_INFO(node_->get_logger(), "CpmApplication started...");
   set_interval(milliseconds(1000));
@@ -69,20 +68,18 @@ void CpmApplication::indicate(const DataIndication &indication, UpPacketPtr pack
   if (cpm)
   {
     RCLCPP_INFO(node_->get_logger(), "Received decodable CPM content");
+    asn1::Cpm message = *cpm;
+    ItsPduHeader_t &header = message->header;
+
+    CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;
+    double lat = management.referencePosition.latitude;
+    double lon = management.referencePosition.longitude;
+    RCLCPP_INFO(node_->get_logger(), "cpm.(reference position) = %f, %f", lat, lon);
   }
   else
   {
     RCLCPP_INFO(node_->get_logger(), "Received broken content");
   }
-  asn1::Cpm message = *cpm;
-  ItsPduHeader_t &header = message->header;
-  RCLCPP_INFO(node_->get_logger(), "cpm.ItsPduHeader.messageId = %d", header.messageID);
-  RCLCPP_INFO(node_->get_logger(), "cpm.ItsPduHeader.stationId = %d", header.stationID);
-
-  CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;
-  double lat = management.referencePosition.latitude;
-  double lon = management.referencePosition.longitude;
-  RCLCPP_INFO(node_->get_logger(), "cpm.(reference position) = %f, %f", lat, lon);
 }
 
 void CpmApplication::updateMGRS(double *x, double *y) {
@@ -143,9 +140,10 @@ void CpmApplication::updateObjectsStack(const autoware_perception_msgs::msg::Dyn
       object.orientation_y = obj.state.pose_covariance.pose.orientation.y;
       object.orientation_z = obj.state.pose_covariance.pose.orientation.z;
       object.orientation_w = obj.state.pose_covariance.pose.orientation.w;
-      object.xDistance = ((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100;
-      object.yDistance = ((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100;
-      // RCLCPP_INFO(node_->get_logger(), "xDistance: %f, yDistance: %f", object.xDistance, object.yDistance);
+      object.xDistance = (int)((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100;
+      object.yDistance = (int)((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100;
+      RCLCPP_INFO(node_->get_logger(), "xDistance: %d, yDistance: %d", object.xDistance, object.yDistance);
+      object.timeOfMeasurement = 100;
       objectsStack.push_back(object);
       ++i;
     }
@@ -205,9 +203,11 @@ void CpmApplication::send()
     ovc.speed.speedValue = 0;
     ovc.speed.speedConfidence = 1;
     // ovc.heading.headingValue = (int) (1.5708 - ego_heading_) * M_PI / 180;
+    RCLCPP_INFO(node_->get_logger(), "headingValue...");
     ovc.heading.headingValue = (int) std::fmod((1.5708-ego_heading_) * 180 / M_PI, 360.0) * 10;
     ovc.heading.headingConfidence = 1;
 
+    RCLCPP_INFO(node_->get_logger(), "PerceviedObjectContainer...");
     PerceivedObjectContainer_t *&poc = cpm.cpmParameters.perceivedObjectContainer;
     poc = vanetza::asn1::allocate<PerceivedObjectContainer_t>();
     // cpm.cpmParameters.perceivedObjectContainer = poc;
@@ -229,15 +229,20 @@ void CpmApplication::send()
       pObj->ySpeed.confidence = 1;
 
       ASN_SEQUENCE_ADD(poc, pObj);
-      // RCLCPP_INFO(node->get_logger(), "Added one object to poc->list");
+      RCLCPP_INFO(node_->get_logger(), "ADD: %d, %d, %d, %d, %d, %d", pObj->objectID, pObj->timeOfMeasurement, pObj->xDistance.value, pObj->yDistance.value, pObj->xSpeed.value, pObj->ySpeed.value);
     }
 
+    RCLCPP_INFO(node_->get_logger(), "1");
     Application::DownPacketPtr packet{new DownPacket()};
+    RCLCPP_INFO(node_->get_logger(), "2");
     std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
+    RCLCPP_INFO(node_->get_logger(), "3");
     // std::shared_ptr<asn1::Cpm> message_p = std::make_shared<asn1::Cpm>(message);
     // std::unique_ptr<convertible::byte_buffer> buffer { new convertible::byte_buffer_impl<asn1::Cpm>(&message)};
 
     payload->layer(OsiLayer::Application) = std::move(message);
+
+    RCLCPP_INFO(node_->get_logger(), "4");
 
     Application::DataRequest request;
     request.its_aid = aid::CP;
@@ -247,7 +252,9 @@ void CpmApplication::send()
     // RCLCPP_INFO(node->get_logger(), "Packet Size: %d", payload->size());
 
     // RCLCPP_INFO(node->get_logger(), "Going to Application::request...");
+    RCLCPP_INFO(node_->get_logger(), "5");
     Application::DataConfirm confirm = Application::request(request, std::move(payload), node_);
+    RCLCPP_INFO(node_->get_logger(), "6");
     if (!confirm.accepted())
     {
       throw std::runtime_error("CPM application data request failed");
