@@ -34,6 +34,7 @@ namespace v2x
     friend class Application;
     V2XNode* node_;
     bool tf_received_;
+    int tf_interval_;
     bool cp_started_;
   };
 }

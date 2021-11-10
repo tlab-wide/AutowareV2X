@@ -41,7 +41,7 @@ namespace v2x
     sending_(false)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started...");
-    set_interval(milliseconds(1000));
+    set_interval(milliseconds(100));
   }
 
   void CpmApplication::set_interval(Clock::duration interval)
@@ -108,8 +108,12 @@ namespace v2x
         CpmApplication::Object object;
         double x1 = poc->list.array[i]->xDistance.value;
         double y1 = poc->list.array[i]->yDistance.value;
-        object.position_x = x_mgrs - (cos(orientation) * x1 - sin(orientation) * y1);
-        object.position_y = y_mgrs - (sin(orientation) * x1 + cos(orientation) * y1);
+        RCLCPP_INFO(node_->get_logger(), "cpm object: xDistance: %f, yDistance: %f", x1, y1);
+        x1 = x1 / 100.0;
+        y1 = y1 / 100.0;
+        object.position_x = x_mgrs + (cos(orientation) * x1 - sin(orientation) * y1);
+        object.position_y = y_mgrs + (sin(orientation) * x1 + cos(orientation) * y1);
+        RCLCPP_INFO(node_->get_logger(), "cpm object: %f, %f, %f, %f", x1, y1, object.position_x, object.position_y);
         receivedObjectsStack.push_back(object);
       }
       node_->publishObjects(&receivedObjectsStack);
@@ -253,6 +257,8 @@ namespace v2x
 
       for (CpmApplication::Object object : objectsStack)
       {
+        if (object.xDistance > 10000) continue;
+        if (object.yDistance > 10000) continue;
         PerceivedObject *pObj = vanetza::asn1::allocate<PerceivedObject>();
         pObj->objectID = object.objectID;
         pObj->timeOfMeasurement = object.timeOfMeasurement;

@@ -33,6 +33,7 @@ namespace v2x
   V2XApp::V2XApp(V2XNode *node) : 
     node_(node),
     tf_received_(false),
+    tf_interval_(0),
     cp_started_(false)
   {
   }
@@ -45,49 +46,53 @@ namespace v2x
   }
 
   void V2XApp::tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg) {
-    // RCLCPP_INFO(node_->get_logger(), "V2XApp: tf msg received");
-    tf_received_ = true;
+    if (tf_interval_ == 4) {
+      RCLCPP_INFO(node_->get_logger(), "V2XApp: tf msg received");
+      tf_received_ = true;
 
-    double x = msg->transforms[0].transform.translation.x;
-    double y = msg->transforms[0].transform.translation.y;
-    double z = msg->transforms[0].transform.translation.z;
-    int timestamp = msg->transforms[0].header.stamp.sec;
-    int gdt = timestamp % 65536;
+      double x = msg->transforms[0].transform.translation.x;
+      double y = msg->transforms[0].transform.translation.y;
+      double z = msg->transforms[0].transform.translation.z;
+      int timestamp = msg->transforms[0].header.stamp.sec;
+      int gdt = timestamp % 65536;
 
-    double rot_x = msg->transforms[0].transform.rotation.x;
-    double rot_y = msg->transforms[0].transform.rotation.y;
-    double rot_z = msg->transforms[0].transform.rotation.z;
-    double rot_w = msg->transforms[0].transform.rotation.w;
+      double rot_x = msg->transforms[0].transform.rotation.x;
+      double rot_y = msg->transforms[0].transform.rotation.y;
+      double rot_z = msg->transforms[0].transform.rotation.z;
+      double rot_w = msg->transforms[0].transform.rotation.w;
 
-    // Convert the quarternion to euler (yaw, pitch, roll)
-    tf2::Quaternion quat(rot_x, rot_y, rot_z, rot_w);
-    tf2::Matrix3x3 matrix(quat);
-    double roll, pitch, yaw;
-    matrix.getRPY(roll, pitch, yaw);
+      // Convert the quarternion to euler (yaw, pitch, roll)
+      tf2::Quaternion quat(rot_x, rot_y, rot_z, rot_w);
+      tf2::Matrix3x3 matrix(quat);
+      double roll, pitch, yaw;
+      matrix.getRPY(roll, pitch, yaw);
 
 
-    char mgrs[20];
-    int zone, prec;
-    bool northp;
-    double x_mgrs, y_mgrs;
-    double lat, lon;
-    sprintf(mgrs, "54SVE%.5d%.5d", (int)x, (int)y);
-    // RCLCPP_INFO(node_->get_logger(), "MGRS: %s", mgrs);
+      char mgrs[20];
+      int zone, prec;
+      bool northp;
+      double x_mgrs, y_mgrs;
+      double lat, lon;
+      sprintf(mgrs, "54SVE%.5d%.5d", (int)x, (int)y);
+      // RCLCPP_INFO(node_->get_logger(), "MGRS: %s", mgrs);
 
-    GeographicLib::MGRS::Reverse(mgrs, zone, northp, x_mgrs, y_mgrs, prec);
-    GeographicLib::UTMUPS::Reverse(zone, northp, x_mgrs, y_mgrs, lat, lon);
+      GeographicLib::MGRS::Reverse(mgrs, zone, northp, x_mgrs, y_mgrs, prec);
+      GeographicLib::UTMUPS::Reverse(zone, northp, x_mgrs, y_mgrs, lat, lon);
 
-    // RCLCPP_INFO(node_->get_logger(), "Ego Position Lat/Lon: %f, %f", lat, lon);
-    // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f, %f, %f, %f", rot_x, rot_y, rot_z, rot_w);
-    // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f %f %f", roll, pitch, yaw);
-    // RCLCPP_INFO(node_->get_logger(), "Timestamp: %d, GDT: %d", timestamp, gdt);
+      // RCLCPP_INFO(node_->get_logger(), "Ego Position Lat/Lon: %f, %f", lat, lon);
+      // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f, %f, %f, %f", rot_x, rot_y, rot_z, rot_w);
+      RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f %f %f", roll, pitch, yaw);
+      // RCLCPP_INFO(node_->get_logger(), "Timestamp: %d, GDT: %d", timestamp, gdt);
 
-    if (cp && cp_started_) {
-      cp->updateMGRS(&x, &y);
-      cp->updateRP(&lat, &lon, &z);
-      cp->updateHeading(&yaw);
-      cp->updateGenerationDeltaTime(&gdt);
+      if (cp && cp_started_) {
+        cp->updateMGRS(&x, &y);
+        cp->updateRP(&lat, &lon, &z);
+        cp->updateHeading(&yaw);
+        cp->updateGenerationDeltaTime(&gdt);
+      }
+      tf_interval_ = 0;
     }
+    tf_interval_ += 1;
   }
 
   void V2XApp::start() {
