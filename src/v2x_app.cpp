@@ -1,4 +1,5 @@
 #include "autoware_v2x/v2x_app.hpp"
+#include "autoware_v2x/v2x_node.hpp"
 #include "autoware_v2x/time_trigger.hpp"
 #include "autoware_v2x/router_context.hpp"
 #include "autoware_v2x/positioning.hpp"
@@ -29,7 +30,7 @@ using namespace std::chrono;
 
 namespace v2x
 {
-  V2XApp::V2XApp(rclcpp::Node *node) : 
+  V2XApp::V2XApp(V2XNode *node) : 
     node_(node),
     tf_received_(false),
     cp_started_(false)
@@ -37,14 +38,14 @@ namespace v2x
   }
 
   void V2XApp::objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
-    RCLCPP_INFO(node_->get_logger(), "V2XApp: msg received");
+    // RCLCPP_INFO(node_->get_logger(), "V2XApp: msg received");
     if (tf_received_ && cp_started_) {
       cp->updateObjectsStack(msg);
     }
   }
 
   void V2XApp::tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg) {
-    RCLCPP_INFO(node_->get_logger(), "V2XApp: tf msg received");
+    // RCLCPP_INFO(node_->get_logger(), "V2XApp: tf msg received");
     tf_received_ = true;
 
     double x = msg->transforms[0].transform.translation.x;
@@ -71,15 +72,15 @@ namespace v2x
     double x_mgrs, y_mgrs;
     double lat, lon;
     sprintf(mgrs, "54SVE%.5d%.5d", (int)x, (int)y);
-    RCLCPP_INFO(node_->get_logger(), "MGRS: %s", mgrs);
+    // RCLCPP_INFO(node_->get_logger(), "MGRS: %s", mgrs);
 
     GeographicLib::MGRS::Reverse(mgrs, zone, northp, x_mgrs, y_mgrs, prec);
     GeographicLib::UTMUPS::Reverse(zone, northp, x_mgrs, y_mgrs, lat, lon);
 
-    RCLCPP_INFO(node_->get_logger(), "Ego Position Lat/Lon: %f, %f", lat, lon);
-    RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f, %f, %f, %f", rot_x, rot_y, rot_z, rot_w);
-    RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f %f %f", roll, pitch, yaw);
-    RCLCPP_INFO(node_->get_logger(), "Timestamp: %d, GDT: %d", timestamp, gdt);
+    // RCLCPP_INFO(node_->get_logger(), "Ego Position Lat/Lon: %f, %f", lat, lon);
+    // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f, %f, %f, %f", rot_x, rot_y, rot_z, rot_w);
+    // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f %f %f", roll, pitch, yaw);
+    // RCLCPP_INFO(node_->get_logger(), "Timestamp: %d, GDT: %d", timestamp, gdt);
 
     if (cp && cp_started_) {
       cp->updateMGRS(&x, &y);
@@ -95,7 +96,7 @@ namespace v2x
     boost::asio::io_service io_service;
     TimeTrigger trigger(io_service);
 
-    const char* device_name = "wlp4s0";
+    const char* device_name = "vmnet1";
     EthernetDevice device(device_name);
     vanetza::MacAddress mac_address = device.address();
 

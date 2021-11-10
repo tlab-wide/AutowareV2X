@@ -13,23 +13,26 @@
 #include "autoware_v2x/positioning.hpp"
 #include "autoware_v2x/security.hpp"
 #include "autoware_v2x/router_context.hpp"
+// #include "autoware_v2x/v2x_node.hpp"
 
 namespace v2x
 {
+  class V2XNode;
   class V2XApp
   {
   public:
-    V2XApp(rclcpp::Node*);
+    V2XApp(V2XNode *);
     void start();
     void objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr);
     void tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr);
 
     CpmApplication *cp;
+    // V2XNode *v2x_node;
 
   private:
     friend class CpmApplication;
     friend class Application;
-    rclcpp::Node* node_;
+    V2XNode* node_;
     bool tf_received_;
     bool cp_started_;
   };
