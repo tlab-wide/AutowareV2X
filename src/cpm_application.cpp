@@ -118,14 +118,15 @@ namespace v2x
         object.position_y = y_mgrs + (sin(orientation) * x1 + cos(orientation) * y1);
         RCLCPP_INFO(node_->get_logger(), "cpm object: %f, %f, %f, %f", x1, y1, object.position_x, object.position_y);
         
-        object.shape_x = poc->list.array[i]->planarObjectDimension2->value / 100;
-        object.shape_y = poc->list.array[i]->planarObjectDimension1->value / 100;
-        object.shape_z = poc->list.array[i]->verticalObjectDimension->value / 100;
+        object.shape_x = poc->list.array[i]->planarObjectDimension2->value;
+        object.shape_y = poc->list.array[i]->planarObjectDimension1->value;
+        object.shape_z = poc->list.array[i]->verticalObjectDimension->value;
 
-        object.yawAngle = poc->list.array[i]->yawAngle->value / 10;
+        object.yawAngle = poc->list.array[i]->yawAngle->value;
+        double yaw_radian = (M_PI * object.yawAngle / 10) / 180;
 
         tf2::Quaternion quat;
-        quat.setRPY(0, 0, object.yawAngle);
+        quat.setRPY(0, 0, yaw_radian);
         object.orientation_x = quat.x();
         object.orientation_y = quat.y();
         object.orientation_z = quat.z();
@@ -209,7 +210,7 @@ namespace v2x
         double roll, pitch, yaw;
         matrix.getRPY(roll, pitch, yaw);
         // RCLCPP_INFO(node_->get_logger(), "yaw: %f", yaw);
-        object.yawAngle = (int) (yaw * 180 / M_PI) * 10 ;
+        object.yawAngle = (int) (yaw * 180 / M_PI) * 10 ; // 0 - 3600
 
         object.timeOfMeasurement = 100;
         objectsStack.push_back(object);
@@ -309,22 +310,13 @@ namespace v2x
         (*(pObj->planarObjectDimension2)).confidence = 1;
         (*(pObj->verticalObjectDimension)).value = object.shape_z;
         (*(pObj->verticalObjectDimension)).confidence = 1;
-        // *((int*)pObj->planarObjectDimension1->confidence) = 1;
-        // *((int*)pObj->planarObjectDimension2->value) = object.shape_x;
-        // *((int*)pObj->planarObjectDimension2->confidence) = 1;
-        // *((int*)pObj->verticalObjectDimension->value) = object.shape_z;
-        // *((int*)pObj->verticalObjectDimension->confidence) = 1;
-
-        // RCLCPP_INFO(node_->get_logger(), "%d", *((int*)pObj->planarObjectDimension1->value));
-        // RCLCPP_INFO(node_->get_logger(), "%d", *((int*)pObj->planarObjectDimension2->value));
-        // RCLCPP_INFO(node_->get_logger(), "%d", *((int*)pObj->verticalObjectDimension->value));
 
         pObj->yawAngle = vanetza::asn1::allocate<CartesianAngle>();
         (*(pObj->yawAngle)).value = object.yawAngle;
         (*(pObj->yawAngle)).confidence = 1;
 
         ASN_SEQUENCE_ADD(poc, pObj);
-        RCLCPP_INFO(node_->get_logger(), "ADD: %d, %d, %d, %d, %d, %d", pObj->objectID, pObj->timeOfMeasurement, pObj->xDistance.value, pObj->yDistance.value, pObj->xSpeed.value, pObj->ySpeed.value);
+        // RCLCPP_INFO(node_->get_logger(), "ADD: %d, %d, %d, %d, %d, %d", pObj->objectID, pObj->timeOfMeasurement, pObj->xDistance.value, pObj->yDistance.value, pObj->xSpeed.value, pObj->ySpeed.value);
       }
       Application::DownPacketPtr packet{new DownPacket()};
       std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
@@ -337,12 +329,14 @@ namespace v2x
       request.its_aid = aid::CP;
       request.transport_type = geonet::TransportType::SHB;
       request.communication_profile = geonet::CommunicationProfile::ITS_G5;
-      // RCLCPP_INFO(node->get_logger(), "Packet Size: %d", payload->size());
-      // RCLCPP_INFO(node->get_logger(), "Going to Application::request...");
-      Application::DataConfirm confirm = Application::request(request, std::move(payload), node_);
-      if (!confirm.accepted())
-      {
-        throw std::runtime_error("CPM application data request failed");
+
+      try {
+        Application::DataConfirm confirm = Application::request(request, std::move(payload), node_);
+        if (!confirm.accepted()) {
+          throw std::runtime_error("CPM application data request failed");
+        }
+      } catch (...) {
+        RCLCPP_INFO(node_->get_logger(), "Request Failed");
       }
     }
     sending_ = false;
