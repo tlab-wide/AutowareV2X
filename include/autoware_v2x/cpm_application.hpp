@@ -36,10 +36,14 @@ namespace v2x
             double orientation_y;
             double orientation_z;
             double orientation_w;
+            int shape_x;
+            int shape_y;
+            int shape_z;
             int xDistance;
             int yDistance;
             double xSpeed;
             double ySpeed;
+            int yawAngle;
             vanetza::PositionFix position;
             int timeOfMeasurement;
         };

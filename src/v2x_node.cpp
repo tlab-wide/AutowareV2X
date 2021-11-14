@@ -58,13 +58,18 @@ namespace v2x
       semantic.confidence = 0.99;
 
       shape.type = autoware_perception_msgs::msg::Shape::BOUNDING_BOX;
-      shape.dimensions.x = 2;
-      shape.dimensions.y = 5.0;
-      shape.dimensions.z = 2.5;
+      shape.dimensions.x = obj.shape_x / 10;
+      shape.dimensions.y = obj.shape_y / 10;
+      shape.dimensions.z = obj.shape_z / 10;
 
       state.pose_covariance.pose.position.x = obj.position_x;
       state.pose_covariance.pose.position.y = obj.position_y;
-      state.pose_covariance.pose.position.z = 0.2;
+      state.pose_covariance.pose.position.z = 0.1;
+
+      state.pose_covariance.pose.orientation.x = obj.orientation_x;
+      state.pose_covariance.pose.orientation.y = obj.orientation_y;
+      state.pose_covariance.pose.orientation.z = obj.orientation_z;
+      state.pose_covariance.pose.orientation.w = obj.orientation_w;
 
       object.semantic = semantic;
       object.shape = shape;

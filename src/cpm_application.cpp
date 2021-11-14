@@ -4,6 +4,9 @@
 #include "autoware_v2x/link_layer.hpp"
 #include "autoware_v2x/v2x_node.hpp"
 
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/LinearMath/Matrix3x3.h"
+
 #include "rclcpp/rclcpp.hpp"
 #include <vanetza/btp/ports.hpp>
 #include <vanetza/asn1/cpm.hpp>
@@ -114,6 +117,20 @@ namespace v2x
         object.position_x = x_mgrs + (cos(orientation) * x1 - sin(orientation) * y1);
         object.position_y = y_mgrs + (sin(orientation) * x1 + cos(orientation) * y1);
         RCLCPP_INFO(node_->get_logger(), "cpm object: %f, %f, %f, %f", x1, y1, object.position_x, object.position_y);
+        
+        object.shape_x = poc->list.array[i]->planarObjectDimension2->value / 100;
+        object.shape_y = poc->list.array[i]->planarObjectDimension1->value / 100;
+        object.shape_z = poc->list.array[i]->verticalObjectDimension->value / 100;
+
+        object.yawAngle = poc->list.array[i]->yawAngle->value / 10;
+
+        tf2::Quaternion quat;
+        quat.setRPY(0, 0, object.yawAngle);
+        object.orientation_x = quat.x();
+        object.orientation_y = quat.y();
+        object.orientation_z = quat.z();
+        object.orientation_w = quat.w();
+
         receivedObjectsStack.push_back(object);
       }
       node_->publishObjects(&receivedObjectsStack);
@@ -164,10 +181,6 @@ namespace v2x
 
     if (msg->objects.size() > 0)
     {
-      // RCLCPP_INFO(node_->get_logger(), "At least 1 object detected");
-
-      // Initialize ObjectsStack
-      // std::vector<CpmApplication::Object> objectsStack;
       objectsStack.clear();
 
       // Create CpmApplication::Object per msg->object and add it to objectsStack
@@ -184,9 +197,20 @@ namespace v2x
         object.orientation_y = obj.state.pose_covariance.pose.orientation.y;
         object.orientation_z = obj.state.pose_covariance.pose.orientation.z;
         object.orientation_w = obj.state.pose_covariance.pose.orientation.w;
+        object.shape_x = (int) obj.shape.dimensions.x * 10;
+        object.shape_y = (int) obj.shape.dimensions.y * 10;
+        object.shape_z = (int) obj.shape.dimensions.z * 10;
         object.xDistance = (int)((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100;
         object.yDistance = (int)((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100;
         // RCLCPP_INFO(node_->get_logger(), "xDistance: %d, yDistance: %d", object.xDistance, object.yDistance);
+
+        tf2::Quaternion quat(object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
+        tf2::Matrix3x3 matrix(quat);
+        double roll, pitch, yaw;
+        matrix.getRPY(roll, pitch, yaw);
+        // RCLCPP_INFO(node_->get_logger(), "yaw: %f", yaw);
+        object.yawAngle = (int) (yaw * 180 / M_PI) * 10 ;
+
         object.timeOfMeasurement = 100;
         objectsStack.push_back(object);
         ++i;
@@ -251,7 +275,7 @@ namespace v2x
       ovc.heading.headingValue = (int)std::fmod((1.5708 - ego_heading_) * 180 / M_PI, 360.0) * 10;
       ovc.heading.headingConfidence = 1;
 
-      // RCLCPP_INFO(node_->get_logger(), "PerceviedObjectContainer...");
+      RCLCPP_INFO(node_->get_logger(), "PerceviedObjectContainer...");
       PerceivedObjectContainer_t *&poc = cpm.cpmParameters.perceivedObjectContainer;
       poc = vanetza::asn1::allocate<PerceivedObjectContainer_t>();
 
@@ -259,6 +283,8 @@ namespace v2x
       {
         if (object.xDistance > 10000) continue;
         if (object.yDistance > 10000) continue;
+
+        RCLCPP_INFO(node_->get_logger(), "Adding Object...");
         PerceivedObject *pObj = vanetza::asn1::allocate<PerceivedObject>();
         pObj->objectID = object.objectID;
         pObj->timeOfMeasurement = object.timeOfMeasurement;
@@ -271,8 +297,34 @@ namespace v2x
         pObj->ySpeed.value = object.ySpeed;
         pObj->ySpeed.confidence = 1;
 
+        pObj->planarObjectDimension1 = vanetza::asn1::allocate<ObjectDimension_t>();
+        pObj->planarObjectDimension2 = vanetza::asn1::allocate<ObjectDimension_t>();
+        pObj->verticalObjectDimension = vanetza::asn1::allocate<ObjectDimension_t>();
+
+        RCLCPP_INFO(node_->get_logger(), "%d %d %d", object.shape_y, object.shape_x, object.shape_z);
+
+        (*(pObj->planarObjectDimension1)).value = object.shape_y;
+        (*(pObj->planarObjectDimension1)).confidence = 1;
+        (*(pObj->planarObjectDimension2)).value = object.shape_x;
+        (*(pObj->planarObjectDimension2)).confidence = 1;
+        (*(pObj->verticalObjectDimension)).value = object.shape_z;
+        (*(pObj->verticalObjectDimension)).confidence = 1;
+        // *((int*)pObj->planarObjectDimension1->confidence) = 1;
+        // *((int*)pObj->planarObjectDimension2->value) = object.shape_x;
+        // *((int*)pObj->planarObjectDimension2->confidence) = 1;
+        // *((int*)pObj->verticalObjectDimension->value) = object.shape_z;
+        // *((int*)pObj->verticalObjectDimension->confidence) = 1;
+
+        // RCLCPP_INFO(node_->get_logger(), "%d", *((int*)pObj->planarObjectDimension1->value));
+        // RCLCPP_INFO(node_->get_logger(), "%d", *((int*)pObj->planarObjectDimension2->value));
+        // RCLCPP_INFO(node_->get_logger(), "%d", *((int*)pObj->verticalObjectDimension->value));
+
+        pObj->yawAngle = vanetza::asn1::allocate<CartesianAngle>();
+        (*(pObj->yawAngle)).value = object.yawAngle;
+        (*(pObj->yawAngle)).confidence = 1;
+
         ASN_SEQUENCE_ADD(poc, pObj);
-        // RCLCPP_INFO(node_->get_logger(), "ADD: %d, %d, %d, %d, %d, %d", pObj->objectID, pObj->timeOfMeasurement, pObj->xDistance.value, pObj->yDistance.value, pObj->xSpeed.value, pObj->ySpeed.value);
+        RCLCPP_INFO(node_->get_logger(), "ADD: %d, %d, %d, %d, %d, %d", pObj->objectID, pObj->timeOfMeasurement, pObj->xDistance.value, pObj->yDistance.value, pObj->xSpeed.value, pObj->ySpeed.value);
       }
       Application::DownPacketPtr packet{new DownPacket()};
       std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
