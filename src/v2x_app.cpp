@@ -47,7 +47,7 @@ namespace v2x
 
   void V2XApp::tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg) {
     if (tf_interval_ == 4) {
-      RCLCPP_INFO(node_->get_logger(), "V2XApp: tf msg received");
+      // RCLCPP_INFO(node_->get_logger(), "V2XApp: tf msg received");
       tf_received_ = true;
 
       double x = msg->transforms[0].transform.translation.x;
@@ -81,7 +81,7 @@ namespace v2x
 
       // RCLCPP_INFO(node_->get_logger(), "Ego Position Lat/Lon: %f, %f", lat, lon);
       // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f, %f, %f, %f", rot_x, rot_y, rot_z, rot_w);
-      RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f %f %f", roll, pitch, yaw);
+      // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f %f %f", roll, pitch, yaw);
       // RCLCPP_INFO(node_->get_logger(), "Timestamp: %d, GDT: %d", timestamp, gdt);
 
       if (cp && cp_started_) {

@@ -83,7 +83,7 @@ namespace v2x
       CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;
       double lat = management.referencePosition.latitude / 1.0e7;
       double lon = management.referencePosition.longitude / 1.0e7;
-      RCLCPP_INFO(node_->get_logger(), "cpm.(reference position) = %f, %f", lat, lon);
+      // RCLCPP_INFO(node_->get_logger(), "cpm.(reference position) = %f, %f", lat, lon);
 
       std::string mgrs;
       int zone;
@@ -94,13 +94,13 @@ namespace v2x
 
       int x_mgrs = std::stoi(mgrs.substr(5, 5));
       int y_mgrs = std::stoi(mgrs.substr(10, 5));
-      RCLCPP_INFO(node_->get_logger(), "cpm.(RP).mgrs = %s, %d, %d", mgrs.c_str(), x_mgrs, y_mgrs);
+      // RCLCPP_INFO(node_->get_logger(), "cpm.(RP).mgrs = %s, %d, %d", mgrs.c_str(), x_mgrs, y_mgrs);
 
       // Calculate orientation from Heading
       OriginatingVehicleContainer_t &ovc = message->cpm.cpmParameters.stationDataContainer->choice.originatingVehicleContainer;
       int heading = ovc.heading.headingValue;
       double orientation = 1.5708 - (M_PI * heading / 10) / 180;
-      RCLCPP_INFO(node_->get_logger(), "cpm: heading = %d, orientation = %f", heading, orientation);
+      // RCLCPP_INFO(node_->get_logger(), "cpm: heading = %d, orientation = %f", heading, orientation);
 
       // Get PerceivedObjects
       receivedObjectsStack.clear();
@@ -111,12 +111,12 @@ namespace v2x
         CpmApplication::Object object;
         double x1 = poc->list.array[i]->xDistance.value;
         double y1 = poc->list.array[i]->yDistance.value;
-        RCLCPP_INFO(node_->get_logger(), "cpm object: xDistance: %f, yDistance: %f", x1, y1);
+        // RCLCPP_INFO(node_->get_logger(), "cpm object: xDistance: %f, yDistance: %f", x1, y1);
         x1 = x1 / 100.0;
         y1 = y1 / 100.0;
         object.position_x = x_mgrs + (cos(orientation) * x1 - sin(orientation) * y1);
         object.position_y = y_mgrs + (sin(orientation) * x1 + cos(orientation) * y1);
-        RCLCPP_INFO(node_->get_logger(), "cpm object: %f, %f, %f, %f", x1, y1, object.position_x, object.position_y);
+        // RCLCPP_INFO(node_->get_logger(), "cpm object: %f, %f, %f, %f", x1, y1, object.position_x, object.position_y);
         
         object.shape_x = poc->list.array[i]->planarObjectDimension2->value;
         object.shape_y = poc->list.array[i]->planarObjectDimension1->value;
@@ -171,7 +171,7 @@ namespace v2x
 
   void CpmApplication::updateObjectsStack(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg)
   {
-    RCLCPP_INFO(node_->get_logger(), "Update ObjectsStack");
+    // RCLCPP_INFO(node_->get_logger(), "Update ObjectsStack");
     updating_objects_stack_ = true;
 
     if (sending_)
@@ -216,8 +216,8 @@ namespace v2x
         objectsStack.push_back(object);
         ++i;
       }
+      RCLCPP_INFO(node_->get_logger(), "%d objects added to objectsStack", objectsStack.size());
     }
-    RCLCPP_INFO(node_->get_logger(), "%d objects added to objectsStack", objectsStack.size());
     updating_objects_stack_ = false;
   }
 
@@ -276,7 +276,7 @@ namespace v2x
       ovc.heading.headingValue = (int)std::fmod((1.5708 - ego_heading_) * 180 / M_PI, 360.0) * 10;
       ovc.heading.headingConfidence = 1;
 
-      RCLCPP_INFO(node_->get_logger(), "PerceviedObjectContainer...");
+      // RCLCPP_INFO(node_->get_logger(), "PerceviedObjectContainer...");
       PerceivedObjectContainer_t *&poc = cpm.cpmParameters.perceivedObjectContainer;
       poc = vanetza::asn1::allocate<PerceivedObjectContainer_t>();
 
@@ -285,7 +285,7 @@ namespace v2x
         if (object.xDistance > 10000) continue;
         if (object.yDistance > 10000) continue;
 
-        RCLCPP_INFO(node_->get_logger(), "Adding Object...");
+        // RCLCPP_INFO(node_->get_logger(), "Adding Object...");
         PerceivedObject *pObj = vanetza::asn1::allocate<PerceivedObject>();
         pObj->objectID = object.objectID;
         pObj->timeOfMeasurement = object.timeOfMeasurement;
