@@ -98,7 +98,9 @@ namespace v2x
       // Calculate orientation from Heading
       OriginatingVehicleContainer_t &ovc = message->cpm.cpmParameters.stationDataContainer->choice.originatingVehicleContainer;
       int heading = ovc.heading.headingValue;
-      double orientation = 1.5708 - (M_PI * heading / 10) / 180;
+      // double orientation = 1.5708 - (M_PI * heading / 10) / 180;
+      double orientation = (90.0 - heading / 10.0) * M_PI / 180;
+      if (orientation < 0.0) orientation += (2 * M_PI);
       // RCLCPP_INFO(node_->get_logger(), "cpm: heading = %d, orientation = %f", heading, orientation);
 
       // Get PerceivedObjects
@@ -185,8 +187,7 @@ namespace v2x
 
     if (msg->objects.size() > 0) {
       int i = 0;
-      for (auto obj : msg->objects)
-      {
+      for (auto obj : msg->objects) {
         CpmApplication::Object object;
         object.objectID = i;
         object.timestamp = msg->header.stamp;
@@ -202,6 +203,12 @@ namespace v2x
         object.shape_z = std::lround(obj.shape.dimensions.z * 10.0);
         object.xDistance = std::lround(((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100.0);
         object.yDistance = std::lround(((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100.0);
+        if (object.xDistance < -132768 || object.xDistance > 132767) {
+          continue;
+        }
+        if (object.yDistance < -132768 || object.yDistance > 132767) {
+          continue;
+        }
         object.xSpeed = 0;
         object.ySpeed = 0;
 
@@ -278,8 +285,12 @@ namespace v2x
     ovc.speed.speedConfidence = 1;
     // ovc.heading.headingValue = (int) (1.5708 - ego_heading_) * M_PI / 180;
     // RCLCPP_INFO(node_->get_logger(), "headingValue...");
-    ovc.heading.headingValue = (int)std::fmod((1.5708 - ego_heading_) * 180 / M_PI, 360.0) * 10;
+    // ovc.heading.headingValue = (int)std::fmod((1.5708 - ego_heading_) * 180 / M_PI, 360.0) * 10;
+    int heading = std::lround(((-ego_heading_ * 180 / M_PI) + 90.0) * 10);
+    if (heading < 0) heading += 3600;
+    ovc.heading.headingValue = heading;
     ovc.heading.headingConfidence = 1;
+    RCLCPP_INFO(node_->get_logger(), "[SEND] headingValue: %f %d", ego_heading_, ovc.heading.headingValue);
 
     if (objectsStack.size() > 0) {
       PerceivedObjectContainer_t *&poc = cpm.cpmParameters.perceivedObjectContainer;
