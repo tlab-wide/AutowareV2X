@@ -44,7 +44,7 @@ namespace v2x
     sending_(false)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started...");
-    set_interval(milliseconds(100));
+    set_interval(milliseconds(1000));
   }
 
   void CpmApplication::set_interval(Clock::duration interval)
@@ -171,20 +171,16 @@ namespace v2x
 
   void CpmApplication::updateObjectsStack(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg)
   {
-    // RCLCPP_INFO(node_->get_logger(), "Update ObjectsStack");
     updating_objects_stack_ = true;
 
-    if (sending_)
-    {
+    if (sending_) {
       RCLCPP_INFO(node_->get_logger(), "updateObjectsStack Skipped...");
       return;
+    } else {
+      objectsStack.clear();
     }
 
-    if (msg->objects.size() > 0)
-    {
-      objectsStack.clear();
-
-      // Create CpmApplication::Object per msg->object and add it to objectsStack
+    if (msg->objects.size() > 0) {
       int i = 0;
       for (auto obj : msg->objects)
       {
@@ -198,94 +194,98 @@ namespace v2x
         object.orientation_y = obj.state.pose_covariance.pose.orientation.y;
         object.orientation_z = obj.state.pose_covariance.pose.orientation.z;
         object.orientation_w = obj.state.pose_covariance.pose.orientation.w;
-        object.shape_x = (int) obj.shape.dimensions.x * 10;
-        object.shape_y = (int) obj.shape.dimensions.y * 10;
-        object.shape_z = (int) obj.shape.dimensions.z * 10;
-        object.xDistance = (int)((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100;
-        object.yDistance = (int)((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100;
-        // RCLCPP_INFO(node_->get_logger(), "xDistance: %d, yDistance: %d", object.xDistance, object.yDistance);
+        object.shape_x = std::lround(obj.shape.dimensions.x * 10.0);
+        object.shape_y = std::lround(obj.shape.dimensions.y * 10.0);
+        object.shape_z = std::lround(obj.shape.dimensions.z * 10.0);
+        object.xDistance = std::lround(((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100.0);
+        object.yDistance = std::lround(((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100.0);
+        object.xSpeed = 0;
+        object.ySpeed = 0;
 
         tf2::Quaternion quat(object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
         tf2::Matrix3x3 matrix(quat);
         double roll, pitch, yaw;
         matrix.getRPY(roll, pitch, yaw);
-        // RCLCPP_INFO(node_->get_logger(), "yaw: %f", yaw);
-        object.yawAngle = (int) (yaw * 180 / M_PI) * 10 ; // 0 - 3600
-
+        if (yaw < 0) {
+          object.yawAngle = std::lround(((yaw + 2*M_PI) * 180.0 / M_PI) * 10.0); // 0 - 3600
+        } else {
+          object.yawAngle = std::lround((yaw * 180.0 / M_PI) * 10.0); // 0 - 3600
+        }
+        
         object.timeOfMeasurement = 100;
         objectsStack.push_back(object);
         ++i;
+        // RCLCPP_INFO(node_->get_logger(), "Added to stack: %f %f %f", obj.shape.dimensions.x, obj.shape.dimensions.y, obj.shape.dimensions.z);
+        // RCLCPP_INFO(node_->get_logger(), "Added to stack: %f %f %f", obj.shape.dimensions.x * 10.0, obj.shape.dimensions.y * 10.0, obj.shape.dimensions.z * 10.0);
+        // RCLCPP_INFO(node_->get_logger(), "Added to stack: %d %d %d", std::lround(obj.shape.dimensions.x * 10.0), std::lround(obj.shape.dimensions.y * 10.0), std::lround(obj.shape.dimensions.z * 10.0));
+        RCLCPP_INFO(node_->get_logger(), "Added to stack: #%d (%d, %d) (%d, %d) (%d, %d, %d) (%f: %d)", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_x, object.shape_y, object.shape_z, yaw, object.yawAngle);
       }
-      RCLCPP_INFO(node_->get_logger(), "%d objects added to objectsStack", objectsStack.size());
     }
+    RCLCPP_INFO(node_->get_logger(), "ObjectsStack: %d objects", objectsStack.size());
     updating_objects_stack_ = false;
   }
 
   void CpmApplication::send()
   {
     sending_ = true;
-    if (!updating_objects_stack_ && objectsStack.size() > 0)
-    {
-      RCLCPP_INFO(node_->get_logger(), "Sending CPM...");
+    
+    RCLCPP_INFO(node_->get_logger(), "Sending CPM...");
 
-      // Send all objects in 1 CPM message
-      vanetza::asn1::Cpm message;
+    vanetza::asn1::Cpm message;
 
-      // ITS PDU Header
-      ItsPduHeader_t &header = message->header;
-      header.protocolVersion = 1;
-      header.messageID = 14;
-      header.stationID = 1;
+    // ITS PDU Header
+    ItsPduHeader_t &header = message->header;
+    header.protocolVersion = 1;
+    header.messageID = 14;
+    header.stationID = 1;
 
-      // const auto time_now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-      // uint16_t gen_delta_time = time_now.count();
+    // const auto time_now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    // uint16_t gen_delta_time = time_now.count();
 
-      CollectivePerceptionMessage_t &cpm = message->cpm;
-      cpm.generationDeltaTime = generationDeltaTime_ * GenerationDeltaTime_oneMilliSec;
+    CollectivePerceptionMessage_t &cpm = message->cpm;
+    cpm.generationDeltaTime = generationDeltaTime_ * GenerationDeltaTime_oneMilliSec;
 
-      // auto position = positioning->position_specify(pos_lat, pos_lon);
+    // auto position = positioning->position_specify(pos_lat, pos_lon);
 
-      CpmManagementContainer_t &management = cpm.cpmParameters.managementContainer;
-      management.stationType = StationType_passengerCar;
-      // management.referencePosition.latitude = pos_lat;
-      // management.referencePosition.longitude = pos_lon;
-      // management.referencePosition.positionConfidenceEllipse.semiMajorConfidence = 1.0;
-      // management.referencePosition.positionConfidenceEllipse.semiMinorConfidence = 1.0;
-      PositionFix fix;
-      // fix.timestamp = time_now;
-      fix.latitude = ego_lat_ * units::degree;
-      fix.longitude = ego_lon_ * units::degree;
-      // fix.altitude = ego_altitude_;
-      fix.confidence.semi_major = 1.0 * units::si::meter;
-      fix.confidence.semi_minor = fix.confidence.semi_major;
-      copy(fix, management.referencePosition);
+    CpmManagementContainer_t &management = cpm.cpmParameters.managementContainer;
+    management.stationType = StationType_passengerCar;
+    // management.referencePosition.latitude = pos_lat;
+    // management.referencePosition.longitude = pos_lon;
+    // management.referencePosition.positionConfidenceEllipse.semiMajorConfidence = 1.0;
+    // management.referencePosition.positionConfidenceEllipse.semiMinorConfidence = 1.0;
+    PositionFix fix;
+    // fix.timestamp = time_now;
+    fix.latitude = ego_lat_ * units::degree;
+    fix.longitude = ego_lon_ * units::degree;
+    // fix.altitude = ego_altitude_;
+    fix.confidence.semi_major = 1.0 * units::si::meter;
+    fix.confidence.semi_minor = fix.confidence.semi_major;
+    copy(fix, management.referencePosition);
 
-      // cpm.cpmParameters.stationDataContainer = NULL;
-      // cpm.cpmParameters.perceivedObjectContainer = NULL;
-      cpm.cpmParameters.numberOfPerceivedObjects = objectsStack.size();
+    // cpm.cpmParameters.stationDataContainer = NULL;
+    // cpm.cpmParameters.perceivedObjectContainer = NULL;
+    cpm.cpmParameters.numberOfPerceivedObjects = objectsStack.size();
 
-      StationDataContainer_t *&sdc = cpm.cpmParameters.stationDataContainer;
-      sdc = vanetza::asn1::allocate<StationDataContainer_t>();
-      // RCLCPP_INFO(node->get_logger(), "Allocated sdc");
-      sdc->present = StationDataContainer_PR_originatingVehicleContainer;
-      OriginatingVehicleContainer_t &ovc = sdc->choice.originatingVehicleContainer;
-      ovc.speed.speedValue = 0;
-      ovc.speed.speedConfidence = 1;
-      // ovc.heading.headingValue = (int) (1.5708 - ego_heading_) * M_PI / 180;
-      // RCLCPP_INFO(node_->get_logger(), "headingValue...");
-      ovc.heading.headingValue = (int)std::fmod((1.5708 - ego_heading_) * 180 / M_PI, 360.0) * 10;
-      ovc.heading.headingConfidence = 1;
+    StationDataContainer_t *&sdc = cpm.cpmParameters.stationDataContainer;
+    sdc = vanetza::asn1::allocate<StationDataContainer_t>();
+    // RCLCPP_INFO(node->get_logger(), "Allocated sdc");
+    sdc->present = StationDataContainer_PR_originatingVehicleContainer;
+    OriginatingVehicleContainer_t &ovc = sdc->choice.originatingVehicleContainer;
+    ovc.speed.speedValue = 0;
+    ovc.speed.speedConfidence = 1;
+    // ovc.heading.headingValue = (int) (1.5708 - ego_heading_) * M_PI / 180;
+    // RCLCPP_INFO(node_->get_logger(), "headingValue...");
+    ovc.heading.headingValue = (int)std::fmod((1.5708 - ego_heading_) * 180 / M_PI, 360.0) * 10;
+    ovc.heading.headingConfidence = 1;
 
-      // RCLCPP_INFO(node_->get_logger(), "PerceviedObjectContainer...");
+    if (objectsStack.size() > 0) {
       PerceivedObjectContainer_t *&poc = cpm.cpmParameters.perceivedObjectContainer;
       poc = vanetza::asn1::allocate<PerceivedObjectContainer_t>();
 
-      for (CpmApplication::Object object : objectsStack)
-      {
-        if (object.xDistance > 10000) continue;
-        if (object.yDistance > 10000) continue;
+      for (CpmApplication::Object object : objectsStack) {
+        // if (object.xDistance > 10000) continue;
+        // if (object.yDistance > 10000) continue;
 
-        // RCLCPP_INFO(node_->get_logger(), "Adding Object...");
         PerceivedObject *pObj = vanetza::asn1::allocate<PerceivedObject>();
         pObj->objectID = object.objectID;
         pObj->timeOfMeasurement = object.timeOfMeasurement;
@@ -302,8 +302,6 @@ namespace v2x
         pObj->planarObjectDimension2 = vanetza::asn1::allocate<ObjectDimension_t>();
         pObj->verticalObjectDimension = vanetza::asn1::allocate<ObjectDimension_t>();
 
-        RCLCPP_INFO(node_->get_logger(), "%d %d %d", object.shape_y, object.shape_x, object.shape_z);
-
         (*(pObj->planarObjectDimension1)).value = object.shape_y;
         (*(pObj->planarObjectDimension1)).confidence = 1;
         (*(pObj->planarObjectDimension2)).value = object.shape_x;
@@ -315,30 +313,41 @@ namespace v2x
         (*(pObj->yawAngle)).value = object.yawAngle;
         (*(pObj->yawAngle)).confidence = 1;
 
+        RCLCPP_INFO(node_->get_logger(), "Added: #%d (%d, %d) (%d, %d) (%d, %d, %d) %d", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_y, object.shape_x, object.shape_z, object.yawAngle);
+
         ASN_SEQUENCE_ADD(poc, pObj);
-        // RCLCPP_INFO(node_->get_logger(), "ADD: %d, %d, %d, %d, %d, %d", pObj->objectID, pObj->timeOfMeasurement, pObj->xDistance.value, pObj->yDistance.value, pObj->xSpeed.value, pObj->ySpeed.value);
       }
-      Application::DownPacketPtr packet{new DownPacket()};
-      std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
-      // std::shared_ptr<asn1::Cpm> message_p = std::make_shared<asn1::Cpm>(message);
-      // std::unique_ptr<convertible::byte_buffer> buffer { new convertible::byte_buffer_impl<asn1::Cpm>(&message)};
-
-      payload->layer(OsiLayer::Application) = std::move(message);
-
-      Application::DataRequest request;
-      request.its_aid = aid::CP;
-      request.transport_type = geonet::TransportType::SHB;
-      request.communication_profile = geonet::CommunicationProfile::ITS_G5;
-
-      try {
-        Application::DataConfirm confirm = Application::request(request, std::move(payload), node_);
-        if (!confirm.accepted()) {
-          throw std::runtime_error("CPM application data request failed");
-        }
-      } catch (...) {
-        RCLCPP_INFO(node_->get_logger(), "Request Failed");
-      }
+    } else {
+      cpm.cpmParameters.perceivedObjectContainer = NULL;
+      RCLCPP_INFO(node_->get_logger(), "Empty POC");
     }
+    
+    Application::DownPacketPtr packet{new DownPacket()};
+    std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
+    // std::shared_ptr<asn1::Cpm> message_p = std::make_shared<asn1::Cpm>(message);
+    // std::unique_ptr<convertible::byte_buffer> buffer { new convertible::byte_buffer_impl<asn1::Cpm>(&message)};
+
+    payload->layer(OsiLayer::Application) = std::move(message);
+
+    Application::DataRequest request;
+    request.its_aid = aid::CP;
+    request.transport_type = geonet::TransportType::SHB;
+    request.communication_profile = geonet::CommunicationProfile::ITS_G5;
+
+    Application::DataConfirm confirm = Application::request(request, std::move(payload), node_);
+
+    if (!confirm.accepted()) {
+      throw std::runtime_error("CPM application data request failed");
+    }
+
+      // try {
+      //   Application::DataConfirm confirm = Application::request(request, std::move(payload), node_);
+      //   if (!confirm.accepted()) {
+      //     throw std::runtime_error("CPM application data request failed");
+      //   }
+      // } catch (...) {
+      //   RCLCPP_INFO(node_->get_logger(), "Request Failed");
+      // }
     sending_ = false;
     // RCLCPP_INFO(node->get_logger(), "Application::request END");
   }

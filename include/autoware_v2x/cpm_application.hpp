@@ -41,8 +41,8 @@ namespace v2x
             int shape_z;
             int xDistance;
             int yDistance;
-            double xSpeed;
-            double ySpeed;
+            int xSpeed;
+            int ySpeed;
             int yawAngle;
             vanetza::PositionFix position;
             int timeOfMeasurement;
