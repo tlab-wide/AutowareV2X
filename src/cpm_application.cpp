@@ -74,9 +74,8 @@ namespace v2x
   {
     asn1::PacketVisitor<asn1::Cpm> visitor;
     std::shared_ptr<const asn1::Cpm> cpm = boost::apply_visitor(visitor, *packet);
-    if (cpm)
-    {
-      RCLCPP_INFO(node_->get_logger(), "Received decodable CPM content");
+    if (cpm) {
+      RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received decodable CPM content");
       asn1::Cpm message = *cpm;
       ItsPduHeader_t &header = message->header;
 
@@ -104,41 +103,45 @@ namespace v2x
 
       // Get PerceivedObjects
       receivedObjectsStack.clear();
+
       PerceivedObjectContainer_t *&poc = message->cpm.cpmParameters.perceivedObjectContainer;
-      for (int i = 0; i < poc->list.count; ++i)
-      {
-        // RCLCPP_INFO(node_->get_logger(), "cpm: %d", poc->list.array[i]->objectID);
-        CpmApplication::Object object;
-        double x1 = poc->list.array[i]->xDistance.value;
-        double y1 = poc->list.array[i]->yDistance.value;
-        // RCLCPP_INFO(node_->get_logger(), "cpm object: xDistance: %f, yDistance: %f", x1, y1);
-        x1 = x1 / 100.0;
-        y1 = y1 / 100.0;
-        object.position_x = x_mgrs + (cos(orientation) * x1 - sin(orientation) * y1);
-        object.position_y = y_mgrs + (sin(orientation) * x1 + cos(orientation) * y1);
-        // RCLCPP_INFO(node_->get_logger(), "cpm object: %f, %f, %f, %f", x1, y1, object.position_x, object.position_y);
-        
-        object.shape_x = poc->list.array[i]->planarObjectDimension2->value;
-        object.shape_y = poc->list.array[i]->planarObjectDimension1->value;
-        object.shape_z = poc->list.array[i]->verticalObjectDimension->value;
 
-        object.yawAngle = poc->list.array[i]->yawAngle->value;
-        double yaw_radian = (M_PI * object.yawAngle / 10) / 180;
+      if (poc != NULL) {
+        for (int i = 0; i < poc->list.count; ++i) {
+          RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
 
-        tf2::Quaternion quat;
-        quat.setRPY(0, 0, yaw_radian);
-        object.orientation_x = quat.x();
-        object.orientation_y = quat.y();
-        object.orientation_z = quat.z();
-        object.orientation_w = quat.w();
+          CpmApplication::Object object;
+          double x1 = poc->list.array[i]->xDistance.value;
+          double y1 = poc->list.array[i]->yDistance.value;
+          // RCLCPP_INFO(node_->get_logger(), "cpm object: xDistance: %f, yDistance: %f", x1, y1);
+          x1 = x1 / 100.0;
+          y1 = y1 / 100.0;
+          object.position_x = x_mgrs + (cos(orientation) * x1 - sin(orientation) * y1);
+          object.position_y = y_mgrs + (sin(orientation) * x1 + cos(orientation) * y1);
+          // RCLCPP_INFO(node_->get_logger(), "cpm object: %f, %f, %f, %f", x1, y1, object.position_x, object.position_y);
+          
+          object.shape_x = poc->list.array[i]->planarObjectDimension2->value;
+          object.shape_y = poc->list.array[i]->planarObjectDimension1->value;
+          object.shape_z = poc->list.array[i]->verticalObjectDimension->value;
 
-        receivedObjectsStack.push_back(object);
+          object.yawAngle = poc->list.array[i]->yawAngle->value;
+          double yaw_radian = (M_PI * object.yawAngle / 10) / 180;
+
+          tf2::Quaternion quat;
+          quat.setRPY(0, 0, yaw_radian);
+          object.orientation_x = quat.x();
+          object.orientation_y = quat.y();
+          object.orientation_z = quat.z();
+          object.orientation_w = quat.w();
+
+          receivedObjectsStack.push_back(object);
+        }
+        node_->publishObjects(&receivedObjectsStack);
+      } else {
+        RCLCPP_INFO(node_->get_logger(), "[INDICATE] Empty POC");
       }
-      node_->publishObjects(&receivedObjectsStack);
-    }
-    else
-    {
-      RCLCPP_INFO(node_->get_logger(), "Received broken content");
+    } else {
+      RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received broken content");
     }
   }
 
@@ -229,7 +232,7 @@ namespace v2x
   {
     sending_ = true;
     
-    RCLCPP_INFO(node_->get_logger(), "Sending CPM...");
+    RCLCPP_INFO(node_->get_logger(), "[SEND] Sending CPM...");
 
     vanetza::asn1::Cpm message;
 
@@ -313,13 +316,13 @@ namespace v2x
         (*(pObj->yawAngle)).value = object.yawAngle;
         (*(pObj->yawAngle)).confidence = 1;
 
-        RCLCPP_INFO(node_->get_logger(), "Added: #%d (%d, %d) (%d, %d) (%d, %d, %d) %d", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_y, object.shape_x, object.shape_z, object.yawAngle);
+        RCLCPP_INFO(node_->get_logger(), "[SEND] Added: #%d (%d, %d) (%d, %d) (%d, %d, %d) %d", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_y, object.shape_x, object.shape_z, object.yawAngle);
 
         ASN_SEQUENCE_ADD(poc, pObj);
       }
     } else {
       cpm.cpmParameters.perceivedObjectContainer = NULL;
-      RCLCPP_INFO(node_->get_logger(), "Empty POC");
+      RCLCPP_INFO(node_->get_logger(), "[SEND] Empty POC");
     }
     
     Application::DownPacketPtr packet{new DownPacket()};
@@ -337,7 +340,7 @@ namespace v2x
     Application::DataConfirm confirm = Application::request(request, std::move(payload), node_);
 
     if (!confirm.accepted()) {
-      throw std::runtime_error("CPM application data request failed");
+      throw std::runtime_error("[SEND] CPM application data request failed");
     }
 
       // try {
