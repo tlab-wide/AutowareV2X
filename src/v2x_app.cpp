@@ -53,8 +53,11 @@ namespace v2x
       double x = msg->transforms[0].transform.translation.x;
       double y = msg->transforms[0].transform.translation.y;
       double z = msg->transforms[0].transform.translation.z;
-      int timestamp = msg->transforms[0].header.stamp.sec;
-      int gdt = timestamp % 65536;
+      int gdt_timestamp_sec = msg->transforms[0].header.stamp.sec; // seconds
+      int gdt_timestamp_nsec = msg->transforms[0].header.stamp.nanosec; // nanoseconds
+      long long gdt_timestamp = gdt_timestamp_sec * 1e9 + gdt_timestamp_nsec; // nanoseconds
+      int gdt_timestamp_msec = gdt_timestamp / 1e6;
+      int gdt = gdt_timestamp_msec % 65536; // milliseconds
 
       double rot_x = msg->transforms[0].transform.rotation.x;
       double rot_y = msg->transforms[0].transform.rotation.y;
@@ -88,7 +91,7 @@ namespace v2x
         cp->updateMGRS(&x, &y);
         cp->updateRP(&lat, &lon, &z);
         cp->updateHeading(&yaw);
-        cp->updateGenerationDeltaTime(&gdt);
+        cp->updateGenerationDeltaTime(&gdt, &gdt_timestamp);
       }
       tf_interval_ = 0;
     }

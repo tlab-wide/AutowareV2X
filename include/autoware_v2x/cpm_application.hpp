@@ -21,7 +21,7 @@ namespace v2x
         void updateObjectsStack(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr);
         void updateMGRS(double *, double *);
         void updateRP(double *, double *, double *);
-        void updateGenerationDeltaTime(int *);
+        void updateGenerationDeltaTime(int *, long long *);
         void updateHeading(double *);
         void send();
 
@@ -65,6 +65,7 @@ namespace v2x
         double ego_altitude_;
         double ego_heading_;
         int generationDeltaTime_;
+        long long gdt_timestamp_;
 
         bool updating_objects_stack_;
         bool sending_;

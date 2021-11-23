@@ -44,7 +44,7 @@ namespace v2x
     sending_(false)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started...");
-    set_interval(milliseconds(100));
+    set_interval(milliseconds(1000));
   }
 
   void CpmApplication::set_interval(Clock::duration interval)
@@ -162,10 +162,10 @@ namespace v2x
     ego_altitude_ = *altitude;
   }
 
-  void CpmApplication::updateGenerationDeltaTime(int *gdt)
+  void CpmApplication::updateGenerationDeltaTime(int *gdt, long long *gdt_timestamp)
   {
-    // RCLCPP_INFO(node_->get_logger(), "Update GDT");
     generationDeltaTime_ = *gdt;
+    gdt_timestamp_ = *gdt_timestamp;
   }
 
   void CpmApplication::updateHeading(double *yaw)
@@ -222,7 +222,12 @@ namespace v2x
           object.yawAngle = std::lround((yaw * 180.0 / M_PI) * 10.0); // 0 - 3600
         }
         
-        object.timeOfMeasurement = 100;
+        long long timestamp = msg->header.stamp.sec * 1e9 + msg->header.stamp.nanosec;
+        object.timeOfMeasurement = (gdt_timestamp_ - timestamp) / 1e6;
+        // RCLCPP_INFO(node_->get_logger(), "[updateObjectsStack] %ld %ld %d", gdt_timestamp_, timestamp, object.timeOfMeasurement);
+        if (object.timeOfMeasurement < -1500 || object.timeOfMeasurement > 1500) {
+          continue;
+        }
         objectsStack.push_back(object);
         ++i;
         // RCLCPP_INFO(node_->get_logger(), "Added to stack: %f %f %f", obj.shape.dimensions.x, obj.shape.dimensions.y, obj.shape.dimensions.z);
@@ -290,7 +295,7 @@ namespace v2x
     if (heading < 0) heading += 3600;
     ovc.heading.headingValue = heading;
     ovc.heading.headingConfidence = 1;
-    RCLCPP_INFO(node_->get_logger(), "[SEND] headingValue: %f %d", ego_heading_, ovc.heading.headingValue);
+    // RCLCPP_INFO(node_->get_logger(), "[SEND] headingValue: %f %d", ego_heading_, ovc.heading.headingValue);
 
     if (objectsStack.size() > 0) {
       PerceivedObjectContainer_t *&poc = cpm.cpmParameters.perceivedObjectContainer;
