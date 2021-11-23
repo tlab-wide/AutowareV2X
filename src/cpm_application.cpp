@@ -44,7 +44,7 @@ namespace v2x
     sending_(false)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started...");
-    set_interval(milliseconds(1000));
+    set_interval(milliseconds(100));
   }
 
   void CpmApplication::set_interval(Clock::duration interval)
