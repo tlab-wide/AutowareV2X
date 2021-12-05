@@ -57,8 +57,9 @@ namespace v2x
       int gdt_timestamp_nsec = msg->transforms[0].header.stamp.nanosec; // nanoseconds
       long long gdt_timestamp = gdt_timestamp_sec * 1e9 + gdt_timestamp_nsec; // nanoseconds
       long long gdt_timestamp_msec = gdt_timestamp / 1000000;
-      int gdt = gdt_timestamp_msec % 65536; // milliseconds
-      RCLCPP_INFO(node_->get_logger(), "gdt %d, gdt_timestamp %ld, gdt_timestamp_msec %ld", gdt, gdt_timestamp, gdt_timestamp_msec);
+      long long gdt_timestamp_msec_etsi_epoch = gdt_timestamp_msec - 1072915200000;
+      int gdt = gdt_timestamp_msec_etsi_epoch % 65536; // milliseconds
+      RCLCPP_INFO(node_->get_logger(), "gdt %d, gdt_timestamp %ld, gdt_timestamp_etsi %ld", gdt, gdt_timestamp_msec, gdt_timestamp_msec_etsi_epoch);
 
       double rot_x = msg->transforms[0].transform.rotation.x;
       double rot_y = msg->transforms[0].transform.rotation.y;
