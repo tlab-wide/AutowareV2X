@@ -79,6 +79,13 @@ namespace v2x
       asn1::Cpm message = *cpm;
       ItsPduHeader_t &header = message->header;
 
+      // Calculate GDT and get GDT from CPM and calculate the "Age of CPM"
+      GenerationDeltaTime_t gdt_cpm = message->cpm.generationDeltaTime;
+      const auto time_now = duration_cast<milliseconds> (runtime_.now().time_since_epoch());
+      uint16_t gdt = time_now.count();
+      int gdt_diff = (65536 + (gdt - gdt_cpm) % 65536) % 65536;
+      RCLCPP_INFO(node_->get_logger(), "gdt: %ld %u %d", gdt_cpm, gdt, gdt_diff);
+
       CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;
       double lat = management.referencePosition.latitude / 1.0e7;
       double lon = management.referencePosition.longitude / 1.0e7;
