@@ -84,7 +84,7 @@ namespace v2x
       const auto time_now = duration_cast<milliseconds> (runtime_.now().time_since_epoch());
       uint16_t gdt = time_now.count();
       int gdt_diff = (65536 + (gdt - gdt_cpm) % 65536) % 65536;
-      RCLCPP_INFO(node_->get_logger(), "gdt: %ld %u %d", gdt_cpm, gdt, gdt_diff);
+      RCLCPP_INFO(node_->get_logger(), "[indicate] gdt: %ld,%u,%d", gdt_cpm, gdt, gdt_diff);
 
       CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;
       double lat = management.referencePosition.latitude / 1.0e7;
@@ -173,7 +173,7 @@ namespace v2x
   {
     generationDeltaTime_ = *gdt;
     gdt_timestamp_ = *gdt_timestamp;
-    RCLCPP_INFO(node_->get_logger(), "[updateGDT] %d %ld", generationDeltaTime_, gdt_timestamp_);
+    // RCLCPP_INFO(node_->get_logger(), "[updateGDT] %d %lu", generationDeltaTime_, gdt_timestamp_);
   }
 
   void CpmApplication::updateHeading(double *yaw)
