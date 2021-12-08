@@ -34,6 +34,8 @@ namespace v2x
 
     publisher_ = create_publisher<autoware_perception_msgs::msg::DynamicObjectArray>("/perception/object_recognition/objects", rclcpp::QoS{10});
 
+    this->declare_parameter<std::string>("network_interface", "vmnet1");
+
     app = new V2XApp(this);
     boost::thread v2xApp(boost::bind(&V2XApp::start, app));
 
