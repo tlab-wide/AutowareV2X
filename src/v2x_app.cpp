@@ -106,8 +106,11 @@ namespace v2x
     boost::asio::io_service io_service;
     TimeTrigger trigger(io_service);
 
-    const char* device_name = "vmnet1";
-    EthernetDevice device(device_name);
+    std::string network_interface;
+    node_->get_parameter("network_interface", network_interface);
+    RCLCPP_INFO(node_->get_logger(), "Network Interface: %s", network_interface.c_str());
+
+    EthernetDevice device(network_interface.c_str());
     vanetza::MacAddress mac_address = device.address();
 
     std::stringstream sout;
