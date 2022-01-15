@@ -40,6 +40,9 @@ namespace v2x
 
   void V2XApp::objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
     // RCLCPP_INFO(node_->get_logger(), "V2XApp: msg received");
+    if (!tf_received_) {
+      RCLCPP_WARN(node_->get_logger(), "[V2XApp::objectsCallback] tf not received yet");
+    }
     if (tf_received_ && cp_started_) {
       cp->updateObjectsStack(msg);
     }
@@ -62,7 +65,7 @@ namespace v2x
     // long long gdt_timestamp_msec_etsi_epoch = gdt_timestamp_msec - 1072915200000;
     // int gdt = gdt_timestamp_msec_etsi_epoch % 65536; // milliseconds
     int gdt = timestamp_msec % 65536;
-    RCLCPP_INFO(node_->get_logger(), "[tfCallback] %d,%lld,%lld,%lld", gdt, timestamp_msec, timestamp_sec, timestamp_nsec);
+    // RCLCPP_INFO(node_->get_logger(), "[tfCallback] %d,%lld,%lld,%lld", gdt, timestamp_msec, timestamp_sec, timestamp_nsec);
 
     double rot_x = msg->transforms[0].transform.rotation.x;
     double rot_y = msg->transforms[0].transform.rotation.y;

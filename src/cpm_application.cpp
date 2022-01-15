@@ -70,12 +70,15 @@ namespace v2x
     return btp::ports::CPM;
   }
 
-  void CpmApplication::indicate(const DataIndication &indication, UpPacketPtr packet)
-  {
+  void CpmApplication::indicate(const DataIndication &indication, UpPacketPtr packet) {
     asn1::PacketVisitor<asn1::Cpm> visitor;
     std::shared_ptr<const asn1::Cpm> cpm = boost::apply_visitor(visitor, *packet);
     if (cpm) {
       RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received decodable CPM content");
+
+      rclcpp::Time current_time = node_->now();
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_receive_r2 %ld", current_time.nanoseconds());
+
       asn1::Cpm message = *cpm;
       ItsPduHeader_t &header = message->header;
 
@@ -172,8 +175,7 @@ namespace v2x
   void CpmApplication::updateGenerationDeltaTime(int *gdt, long long *gdt_timestamp)
   {
     generationDeltaTime_ = *gdt;
-    gdt_timestamp_ = *gdt_timestamp;
-    // RCLCPP_INFO(node_->get_logger(), "[updateGDT] %d %lu", generationDeltaTime_, gdt_timestamp_);
+    gdt_timestamp_ = *gdt_timestamp; // ETSI-epoch milliseconds timestamp
   }
 
   void CpmApplication::updateHeading(double *yaw)
@@ -230,10 +232,15 @@ namespace v2x
           object.yawAngle = std::lround((yaw * 180.0 / M_PI) * 10.0); // 0 - 3600
         }
         
-        long long timestamp = msg->header.stamp.sec * 1e9 + msg->header.stamp.nanosec;
-        object.timeOfMeasurement = (gdt_timestamp_ - timestamp) / 1e6;
+        long long msg_timestamp_sec = msg->header.stamp.sec;
+        long long msg_timestamp_nsec = msg->header.stamp.nanosec;
+        msg_timestamp_sec -= 1072915200; // convert to etsi-epoch
+        long long msg_timestamp_msec = msg_timestamp_sec * 1000 + msg_timestamp_nsec / 1000000;
+        // long long timestamp = msg->header.stamp.sec * 1e9 + msg->header.stamp.nanosec;
+        object.timeOfMeasurement = gdt_timestamp_ - msg_timestamp_msec;
         // RCLCPP_INFO(node_->get_logger(), "[updateObjectsStack] %ld %ld %d", gdt_timestamp_, timestamp, object.timeOfMeasurement);
         if (object.timeOfMeasurement < -1500 || object.timeOfMeasurement > 1500) {
+          RCLCPP_INFO(node_->get_logger(), "[updateObjectsStack] timeOfMeasurement out of bounds: %d", object.timeOfMeasurement);
           continue;
         }
         objectsStack.push_back(object);
@@ -248,8 +255,7 @@ namespace v2x
     updating_objects_stack_ = false;
   }
 
-  void CpmApplication::send()
-  {
+  void CpmApplication::send() {
     sending_ = true;
     
     RCLCPP_INFO(node_->get_logger(), "[SEND] Sending CPM...");
@@ -377,5 +383,7 @@ namespace v2x
       // }
     sending_ = false;
     // RCLCPP_INFO(node->get_logger(), "Application::request END");
+    rclcpp::Time current_time = node_->now();
+    RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] [measure] T_depart_r1 %ld", current_time.nanoseconds());
   }
 }
