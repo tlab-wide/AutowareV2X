@@ -87,7 +87,10 @@ namespace v2x
       const auto time_now = duration_cast<milliseconds> (runtime_.now().time_since_epoch());
       uint16_t gdt = time_now.count();
       int gdt_diff = (65536 + (gdt - gdt_cpm) % 65536) % 65536;
-      RCLCPP_INFO(node_->get_logger(), "[indicate] gdt: %ld,%u,%d", gdt_cpm, gdt, gdt_diff);
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT_CPM: %ld", gdt_cpm);
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT: %u", gdt);
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_R1R2: %d", gdt_diff);
+
 
       CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;
       double lat = management.referencePosition.latitude / 1.0e7;
