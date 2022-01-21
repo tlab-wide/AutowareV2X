@@ -69,6 +69,8 @@ namespace v2x
 
         bool updating_objects_stack_;
         bool sending_;
+        bool is_sender_;
+        bool reflect_packet_;
     };
 }
 

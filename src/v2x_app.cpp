@@ -135,7 +135,7 @@ namespace v2x
     context.set_link_layer(link_layer.get());
 
     cp = new CpmApplication(node_, trigger.runtime());
-
+    
     context.enable(cp);
 
     cp_started_ = true;
