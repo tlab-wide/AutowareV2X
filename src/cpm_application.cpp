@@ -267,6 +267,8 @@ namespace v2x
       }
     }
     RCLCPP_INFO(node_->get_logger(), "ObjectsStack: %d objects", objectsStack.size());
+    rclcpp::Time current_time = node_->now();
+    RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] [measure] T_objstack_updated %ld", current_time.nanoseconds());
     updating_objects_stack_ = false;
   }
 
