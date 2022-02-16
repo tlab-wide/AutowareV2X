@@ -6,6 +6,7 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include "autoware_perception_msgs/msg/dynamic_object_array.hpp"
+#include "autoware_v2x_msgs/msg/cpm_reception_status.hpp"
 #include "autoware_v2x/positioning.hpp"
 
 namespace v2x
@@ -14,7 +15,7 @@ namespace v2x
     class CpmApplication : public Application
     {
     public:
-        CpmApplication(V2XNode *node, vanetza::Runtime &);
+        CpmApplication(V2XNode *node, vanetza::Runtime &, rclcpp::Publisher<autoware_v2x_msgs::msg::CpmReceptionStatus>::SharedPtr);
         PortType port() override;
         void indicate(const DataIndication &, UpPacketPtr) override;
         void set_interval(vanetza::Clock::duration);
@@ -56,6 +57,7 @@ namespace v2x
 
         V2XNode *node_;
         vanetza::Runtime &runtime_;
+        rclcpp::Publisher<autoware_v2x_msgs::msg::CpmReceptionStatus>::SharedPtr pub_v2x_;
         vanetza::Clock::duration cpm_interval_;
 
         struct Ego_station {

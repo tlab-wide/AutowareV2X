@@ -29,9 +29,10 @@ using namespace vanetza::facilities;
 using namespace std::chrono;
 
 namespace v2x {
-  CpmApplication::CpmApplication(V2XNode *node, Runtime &rt) :     
+  CpmApplication::CpmApplication(V2XNode *node, Runtime &rt, rclcpp::Publisher<autoware_v2x_msgs::msg::CpmReceptionStatus>::SharedPtr pub_v2x) :     
     node_(node),
     runtime_(rt),
+    pub_v2x_(pub_v2x),
     ego_(),
     generationDeltaTime_(0),
     updating_objects_stack_(false),
@@ -167,6 +168,10 @@ namespace v2x {
           throw std::runtime_error("[CpmApplication::indicate] Packet reflection failed");
         }
       }
+
+      auto msg_v2x = autoware_v2x_msgs::msg::CpmReceptionStatus();
+      msg_v2x.cpm_receiving = true;
+      pub_v2x_->publish(msg_v2x);
 
 
     } else {

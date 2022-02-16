@@ -4,6 +4,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "autoware_perception_msgs/msg/dynamic_object_array.hpp"
+#include "autoware_v2x_msgs/msg/cpm_reception_status.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 #include <boost/asio/io_service.hpp>
 #include "autoware_v2x/cpm_application.hpp"
@@ -21,7 +22,7 @@ namespace v2x
   class V2XApp
   {
   public:
-    V2XApp(V2XNode *);
+    V2XApp(V2XNode *, rclcpp::Publisher<autoware_v2x_msgs::msg::CpmReceptionStatus>::SharedPtr);
     void start();
     void objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr);
     void tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr);
@@ -33,6 +34,7 @@ namespace v2x
     friend class CpmApplication;
     friend class Application;
     V2XNode* node_;
+    rclcpp::Publisher<autoware_v2x_msgs::msg::CpmReceptionStatus>::SharedPtr pub_v2x_;
     bool tf_received_;
     int tf_interval_;
     bool cp_started_;

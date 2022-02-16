@@ -4,6 +4,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "autoware_perception_msgs/msg/dynamic_object_array.hpp"
+#include "autoware_v2x_msgs/msg/cpm_reception_status.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 #include <boost/asio/io_service.hpp>
 #include "autoware_v2x/v2x_app.hpp"
@@ -32,6 +33,7 @@ namespace v2x
     rclcpp::Subscription<autoware_perception_msgs::msg::DynamicObjectArray>::SharedPtr subscription_;
     rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr subscription_pos_;
     rclcpp::Publisher<autoware_perception_msgs::msg::DynamicObjectArray>::SharedPtr publisher_;
+    rclcpp::Publisher<autoware_v2x_msgs::msg::CpmReceptionStatus>::SharedPtr pub_v2x_;
 
     double pos_lat_;
     double pos_lon_;

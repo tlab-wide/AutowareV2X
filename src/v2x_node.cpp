@@ -33,9 +33,11 @@ namespace v2x
 
     publisher_ = create_publisher<autoware_perception_msgs::msg::DynamicObjectArray>("/v2x/cpm/objects", rclcpp::QoS{10});
 
+    pub_v2x_ = create_publisher<autoware_v2x_msgs::msg::CpmReceptionStatus>("/v2x/cpm/cpm_reception_status", rclcpp::QoS{10});
+
     this->declare_parameter<std::string>("network_interface", "vmnet1");
 
-    app = new V2XApp(this);
+    app = new V2XApp(this, pub_v2x_);
     boost::thread v2xApp(boost::bind(&V2XApp::start, app));
 
     RCLCPP_INFO(get_logger(), "V2X Node Launched");

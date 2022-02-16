@@ -30,8 +30,9 @@ using namespace std::chrono;
 
 namespace v2x
 {
-  V2XApp::V2XApp(V2XNode *node) : 
+  V2XApp::V2XApp(V2XNode *node, rclcpp::Publisher<autoware_v2x_msgs::msg::CpmReceptionStatus>::SharedPtr pub_v2x) : 
     node_(node),
+    pub_v2x_(pub_v2x),
     tf_received_(false),
     tf_interval_(0),
     cp_started_(false)
@@ -123,7 +124,7 @@ namespace v2x
 
     context.set_link_layer(link_layer.get());
 
-    cp = new CpmApplication(node_, trigger.runtime());
+    cp = new CpmApplication(node_, trigger.runtime(), pub_v2x_);
     
     context.enable(cp);
 
