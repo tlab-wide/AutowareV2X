@@ -28,17 +28,11 @@ using namespace vanetza;
 using namespace vanetza::facilities;
 using namespace std::chrono;
 
-namespace v2x
-{
+namespace v2x {
   CpmApplication::CpmApplication(V2XNode *node, Runtime &rt) :     
     node_(node),
     runtime_(rt),
-    ego_x_(0),
-    ego_y_(0),
-    ego_lat_(0),
-    ego_lon_(0),
-    ego_altitude_(0),
-    ego_heading_(0),
+    ego_(),
     generationDeltaTime_(0),
     updating_objects_stack_(false),
     sending_(false),
@@ -181,14 +175,14 @@ namespace v2x
   }
 
   void CpmApplication::updateMGRS(double *x, double *y) {
-    ego_x_ = *x;
-    ego_y_ = *y;
+    ego_.mgrs_x = *x;
+    ego_.mgrs_y = *y;
   }
 
   void CpmApplication::updateRP(double *lat, double *lon, double *altitude) {
-    ego_lat_ = *lat;
-    ego_lon_ = *lon;
-    ego_altitude_ = *altitude;
+    ego_.latitude = *lat;
+    ego_.longitude = *lon;
+    ego_.altitude = *altitude;
   }
 
   void CpmApplication::updateGenerationDeltaTime(int *gdt, long long *gdt_timestamp) {
@@ -197,7 +191,7 @@ namespace v2x
   }
 
   void CpmApplication::updateHeading(double *yaw) {
-    ego_heading_ = *yaw;
+    ego_.heading = *yaw;
   }
 
   void CpmApplication::updateObjectsStack(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
@@ -226,8 +220,10 @@ namespace v2x
         object.shape_x = std::lround(obj.shape.dimensions.x * 10.0);
         object.shape_y = std::lround(obj.shape.dimensions.y * 10.0);
         object.shape_z = std::lround(obj.shape.dimensions.z * 10.0);
-        object.xDistance = std::lround(((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100.0);
-        object.yDistance = std::lround(((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100.0);
+        // object.xDistance = std::lround(((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100.0);
+        // object.yDistance = std::lround(((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100.0);
+        object.xDistance = std::lround(((object.position_x - ego_.mgrs_x) * cos(-ego_.heading) - (object.position_y - ego_.mgrs_y) * sin(-ego_.heading)) * 100.0);
+        object.yDistance = std::lround(((object.position_x - ego_.mgrs_x) * sin(-ego_.heading) + (object.position_y - ego_.mgrs_y) * cos(-ego_.heading)) * 100.0);
         if (object.xDistance < -132768 || object.xDistance > 132767) {
           continue;
         }
@@ -260,9 +256,7 @@ namespace v2x
         }
         objectsStack.push_back(object);
         ++i;
-        // RCLCPP_INFO(node_->get_logger(), "Added to stack: %f %f %f", obj.shape.dimensions.x, obj.shape.dimensions.y, obj.shape.dimensions.z);
-        // RCLCPP_INFO(node_->get_logger(), "Added to stack: %f %f %f", obj.shape.dimensions.x * 10.0, obj.shape.dimensions.y * 10.0, obj.shape.dimensions.z * 10.0);
-        // RCLCPP_INFO(node_->get_logger(), "Added to stack: %d %d %d", std::lround(obj.shape.dimensions.x * 10.0), std::lround(obj.shape.dimensions.y * 10.0), std::lround(obj.shape.dimensions.z * 10.0));
+        
         RCLCPP_INFO(node_->get_logger(), "Added to stack: #%d (%d, %d) (%d, %d) (%d, %d, %d) (%f: %d)", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_x, object.shape_y, object.shape_z, yaw, object.yawAngle);
       }
     }
@@ -295,8 +289,8 @@ namespace v2x
       CpmManagementContainer_t &management = cpm.cpmParameters.managementContainer;
       management.stationType = StationType_passengerCar;
       PositionFix fix;
-      fix.latitude = ego_lat_ * units::degree;
-      fix.longitude = ego_lon_ * units::degree;
+      fix.latitude = ego_.latitude * units::degree;
+      fix.longitude = ego_.longitude * units::degree;
       fix.confidence.semi_major = 1.0 * units::si::meter;
       fix.confidence.semi_minor = fix.confidence.semi_major;
       copy(fix, management.referencePosition);
@@ -308,7 +302,7 @@ namespace v2x
       OriginatingVehicleContainer_t &ovc = sdc->choice.originatingVehicleContainer;
       ovc.speed.speedValue = 0;
       ovc.speed.speedConfidence = 1;
-      int heading = std::lround(((-ego_heading_ * 180 / M_PI) + 90.0) * 10);
+      int heading = std::lround(((-ego_.heading * 180.0 / M_PI) + 90.0) * 10.0);
       if (heading < 0) heading += 3600;
       ovc.heading.headingValue = heading;
       ovc.heading.headingConfidence = 1;

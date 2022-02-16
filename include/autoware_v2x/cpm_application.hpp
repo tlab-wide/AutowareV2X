@@ -58,12 +58,17 @@ namespace v2x
         vanetza::Runtime &runtime_;
         vanetza::Clock::duration cpm_interval_;
 
-        double ego_x_;
-        double ego_y_;
-        double ego_lat_;
-        double ego_lon_;
-        double ego_altitude_;
-        double ego_heading_;
+        struct Ego_station {
+            double mgrs_x;
+            double mgrs_y;
+            double latitude;
+            double longitude;
+            double altitude;
+            double heading;
+        };
+
+        Ego_station ego_;
+        
         int generationDeltaTime_;
         long long gdt_timestamp_;
 
