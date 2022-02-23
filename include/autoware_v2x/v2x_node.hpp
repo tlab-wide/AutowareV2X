@@ -33,9 +33,6 @@ namespace v2x
     rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr subscription_pos_;
     rclcpp::Publisher<autoware_perception_msgs::msg::DynamicObjectArray>::SharedPtr publisher_;
 
-    rclcpp::Time received_time;
-    bool cpm_received;
-
     double pos_lat_;
     double pos_lon_;
   };

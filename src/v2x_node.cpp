@@ -25,14 +25,13 @@ using namespace std::chrono;
 
 namespace v2x
 {
-  V2XNode::V2XNode(const rclcpp::NodeOptions &node_options) : rclcpp::Node("autoware_v2x_node", node_options), received_time(this->now()), cpm_received(false)
-  {
+  V2XNode::V2XNode(const rclcpp::NodeOptions &node_options) : rclcpp::Node("autoware_v2x_node", node_options) {
     using std::placeholders::_1;
     subscription_ = this->create_subscription<autoware_perception_msgs::msg::DynamicObjectArray>("/perception/object_recognition/objects", 10, std::bind(&V2XNode::objectsCallback, this, _1));
 
     subscription_pos_ = this->create_subscription<tf2_msgs::msg::TFMessage>("/tf", 10, std::bind(&V2XNode::tfCallback, this, _1));
 
-    publisher_ = create_publisher<autoware_perception_msgs::msg::DynamicObjectArray>("/perception/object_recognition/objects", rclcpp::QoS{10});
+    publisher_ = create_publisher<autoware_perception_msgs::msg::DynamicObjectArray>("/v2x/cpm/objects", rclcpp::QoS{10});
 
     this->declare_parameter<std::string>("network_interface", "vmnet1");
 
@@ -40,13 +39,16 @@ namespace v2x
     boost::thread v2xApp(boost::bind(&V2XApp::start, app));
 
     RCLCPP_INFO(get_logger(), "V2X Node Launched");
+
+    rclcpp::Time current_time = this->now();
+    RCLCPP_INFO(get_logger(), "[V2XNode::V2XNode] [measure] T_R1 %ld", current_time.nanoseconds());
+
   }
 
   void V2XNode::publishObjects(std::vector<CpmApplication::Object> *objectsStack) {
     autoware_perception_msgs::msg::DynamicObjectArray output_dynamic_object_msg;
     std_msgs::msg::Header header;
     rclcpp::Time current_time = this->now();
-    received_time = current_time;
     output_dynamic_object_msg.header.frame_id = "map";
     output_dynamic_object_msg.header.stamp = current_time;
 
@@ -79,27 +81,25 @@ namespace v2x
 
       output_dynamic_object_msg.objects.push_back(object);
     }
-    cpm_received = true;
+
+    current_time = this->now();
+    RCLCPP_INFO(get_logger(), "[V2XNode::publishObjects] [measure] T_obj_r2 %ld", current_time.nanoseconds());
+
     publisher_->publish(output_dynamic_object_msg);
   }
 
-  void V2XNode::objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg)
-  {
+  void V2XNode::objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
     rclcpp::Time current_time = this->now();
-    // RCLCPP_INFO(get_logger(), "%ld", current_time.nanoseconds() - received_time.nanoseconds());
-    if (cpm_received) {
-      // if time difference is more than 10ms
-      if (current_time - received_time > rclcpp::Duration(std::chrono::nanoseconds(10000000))) {
-        app->objectsCallback(msg);
-      }
-      cpm_received = false;
-    } else {
-      app->objectsCallback(msg);
-    }
+    rclcpp::Time msg_time = msg->header.stamp; // timestamp included in the Autoware Perception Msg.
+    RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] %d objects", msg->objects.size());
+
+    // Measuring T_A1R1
+    RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj %ld", msg_time.nanoseconds());
+    RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj_receive %ld", current_time.nanoseconds());
+    app->objectsCallback(msg);
   }
 
-  void V2XNode::tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg)
-  {
+  void V2XNode::tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg) {
     app->tfCallback(msg);
   }
 }

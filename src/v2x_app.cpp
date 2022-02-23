@@ -40,13 +40,16 @@ namespace v2x
 
   void V2XApp::objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
     // RCLCPP_INFO(node_->get_logger(), "V2XApp: msg received");
+    if (!tf_received_) {
+      RCLCPP_WARN(node_->get_logger(), "[V2XApp::objectsCallback] tf not received yet");
+    }
     if (tf_received_ && cp_started_) {
       cp->updateObjectsStack(msg);
     }
   }
 
   void V2XApp::tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg) {
-    // RCLCPP_INFO(node_->get_logger(), "V2XApp: tf msg received");
+
     tf_received_ = true;
 
     double x = msg->transforms[0].transform.translation.x;
@@ -57,12 +60,8 @@ namespace v2x
     long long timestamp_nsec = msg->transforms[0].header.stamp.nanosec; // nanoseconds
     timestamp_sec -= 1072915200; // convert to etsi-epoch
     long long timestamp_msec = timestamp_sec * 1000 + timestamp_nsec / 1000000;
-    // long long gdt_timestamp = gdt_timestamp_sec * 1e9 + gdt_timestamp_nsec; // nanoseconds
-    // long long gdt_timestamp_msec = gdt_timestamp / 1000000;
-    // long long gdt_timestamp_msec_etsi_epoch = gdt_timestamp_msec - 1072915200000;
-    // int gdt = gdt_timestamp_msec_etsi_epoch % 65536; // milliseconds
     int gdt = timestamp_msec % 65536;
-    RCLCPP_INFO(node_->get_logger(), "[tfCallback] %d,%lld,%lld,%lld", gdt, timestamp_msec, timestamp_sec, timestamp_nsec);
+    // RCLCPP_INFO(node_->get_logger(), "[tfCallback] %d,%lld,%lld,%lld", gdt, timestamp_msec, timestamp_sec, timestamp_nsec);
 
     double rot_x = msg->transforms[0].transform.rotation.x;
     double rot_y = msg->transforms[0].transform.rotation.y;
@@ -75,22 +74,15 @@ namespace v2x
     double roll, pitch, yaw;
     matrix.getRPY(roll, pitch, yaw);
 
-
     char mgrs[20];
     int zone, prec;
     bool northp;
     double x_mgrs, y_mgrs;
     double lat, lon;
     sprintf(mgrs, "54SVE%.5d%.5d", (int)x, (int)y);
-    // RCLCPP_INFO(node_->get_logger(), "MGRS: %s", mgrs);
 
     GeographicLib::MGRS::Reverse(mgrs, zone, northp, x_mgrs, y_mgrs, prec);
     GeographicLib::UTMUPS::Reverse(zone, northp, x_mgrs, y_mgrs, lat, lon);
-
-    // RCLCPP_INFO(node_->get_logger(), "Ego Position Lat/Lon: %f, %f", lat, lon);
-    // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f, %f, %f, %f", rot_x, rot_y, rot_z, rot_w);
-    // RCLCPP_INFO(node_->get_logger(), "Ego Orientation: %f %f %f", roll, pitch, yaw);
-    // RCLCPP_INFO(node_->get_logger(), "Timestamp: %d, GDT: %d", timestamp, gdt);
 
     if (cp && cp_started_) {
       cp->updateMGRS(&x, &y);
@@ -132,7 +124,7 @@ namespace v2x
     context.set_link_layer(link_layer.get());
 
     cp = new CpmApplication(node_, trigger.runtime());
-
+    
     context.enable(cp);
 
     cp_started_ = true;
