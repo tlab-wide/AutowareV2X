@@ -93,13 +93,16 @@ namespace v2x {
 
       std::string mgrs;
       int zone;
+      int grid_num_x = 4;
+      int grid_num_y = 39;
+      int grid_size = 100000;
       bool northp;
       double x, y;
       GeographicLib::UTMUPS::Forward(lat, lon, zone, northp, x, y);
-      GeographicLib::MGRS::Forward(zone, northp, x, y, lat, 5, mgrs);
+      // GeographicLib::MGRS::Forward(zone, northp, x, y, lat, 5, mgrs);
 
-      int x_mgrs = std::stoi(mgrs.substr(5, 5));
-      int y_mgrs = std::stoi(mgrs.substr(10, 5));
+      double x_mgrs = x - grid_num_x * grid_size;
+      double y_mgrs = y - grid_num_y * grid_size;
       // RCLCPP_INFO(node_->get_logger(), "cpm.(RP).mgrs = %s, %d, %d", mgrs.c_str(), x_mgrs, y_mgrs);
 
       // Calculate orientation from Heading

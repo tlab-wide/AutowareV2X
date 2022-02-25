@@ -74,15 +74,33 @@ namespace v2x
     double roll, pitch, yaw;
     matrix.getRPY(roll, pitch, yaw);
 
-    char mgrs[20];
-    int zone, prec;
-    bool northp;
+    char mgrs[30];
+    int zone = 54;
+    int grid_num_x = 4;
+    int grid_num_y = 39;
+    int grid_size = 100000;
+    int prec;
+    bool northp = true;
     double x_mgrs, y_mgrs;
-    double lat, lon;
-    sprintf(mgrs, "54SVE%.5d%.5d", (int)x, (int)y);
 
-    GeographicLib::MGRS::Reverse(mgrs, zone, northp, x_mgrs, y_mgrs, prec);
-    GeographicLib::UTMUPS::Reverse(zone, northp, x_mgrs, y_mgrs, lat, lon);
+    double lat, lon;
+    // sprintf(mgrs, "54SVE%.3f%.3f", x, y);
+    // RCLCPP_INFO(node_->get_logger(), "%s", mgrs);
+
+    // Convert MGRS coordinate to UTM coordinate.
+    // GeographicLib::MGRS::Reverse(mgrs, zone, northp, x_mgrs, y_mgrs, prec);
+
+    // Reverse projection from UTM to geographic.
+    GeographicLib::UTMUPS::Reverse(
+      zone, 
+      northp, 
+      grid_num_x * grid_size + x, 
+      grid_num_y * grid_size + y, 
+      lat, 
+      lon
+    );
+
+    RCLCPP_INFO(node_->get_logger(), "%f, %f", lat, lon);
 
     if (cp && cp_started_) {
       cp->updateMGRS(&x, &y);
