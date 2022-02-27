@@ -1,6 +1,8 @@
 <launch>
   <arg name="network_interface" default="wlp5s0"/>
+  <arg name="is_sender" default="true"/>
   <node pkg="autoware_v2x" exec="autoware_v2x_node" namespace="v2x" output="screen">
     <param name="network_interface" value="$(var network_interface)"/>
+    <param name="is_sender" value="$(var is_sender)"/>
   </node>
 </launch>
