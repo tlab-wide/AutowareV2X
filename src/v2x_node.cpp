@@ -34,6 +34,7 @@ namespace v2x
     publisher_ = create_publisher<autoware_perception_msgs::msg::DynamicObjectArray>("/v2x/cpm/objects", rclcpp::QoS{10});
 
     this->declare_parameter<std::string>("network_interface", "vmnet1");
+    this->declare_parameter<bool>("is_sender", true);
 
     app = new V2XApp(this);
     boost::thread v2xApp(boost::bind(&V2XApp::start, app));
@@ -83,7 +84,7 @@ namespace v2x
     }
 
     current_time = this->now();
-    RCLCPP_INFO(get_logger(), "[V2XNode::publishObjects] [measure] T_obj_r2 %ld", current_time.nanoseconds());
+    // RCLCPP_INFO(get_logger(), "[V2XNode::publishObjects] [measure] T_obj_r2 %ld", current_time.nanoseconds());
 
     publisher_->publish(output_dynamic_object_msg);
   }
@@ -91,11 +92,11 @@ namespace v2x
   void V2XNode::objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
     rclcpp::Time current_time = this->now();
     rclcpp::Time msg_time = msg->header.stamp; // timestamp included in the Autoware Perception Msg.
-    RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] %d objects", msg->objects.size());
+    // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] %d objects", msg->objects.size());
 
     // Measuring T_A1R1
-    RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj %ld", msg_time.nanoseconds());
-    RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj_receive %ld", current_time.nanoseconds());
+    // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj %ld", msg_time.nanoseconds());
+    // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj_receive %ld", current_time.nanoseconds());
     app->objectsCallback(msg);
   }
 

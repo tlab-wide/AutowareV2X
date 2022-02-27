@@ -61,7 +61,6 @@ namespace v2x
     timestamp_sec -= 1072915200; // convert to etsi-epoch
     long long timestamp_msec = timestamp_sec * 1000 + timestamp_nsec / 1000000;
     int gdt = timestamp_msec % 65536;
-    // RCLCPP_INFO(node_->get_logger(), "[tfCallback] %d,%lld,%lld,%lld", gdt, timestamp_msec, timestamp_sec, timestamp_nsec);
 
     double rot_x = msg->transforms[0].transform.rotation.x;
     double rot_y = msg->transforms[0].transform.rotation.y;
@@ -74,16 +73,23 @@ namespace v2x
     double roll, pitch, yaw;
     matrix.getRPY(roll, pitch, yaw);
 
-    char mgrs[20];
-    int zone, prec;
-    bool northp;
-    double x_mgrs, y_mgrs;
+    int zone = 54;
+    int grid_num_x = 4;
+    int grid_num_y = 39;
+    int grid_size = 100000;
+    bool northp = true;
     double lat, lon;
-    sprintf(mgrs, "54SVE%.5d%.5d", (int)x, (int)y);
 
-    GeographicLib::MGRS::Reverse(mgrs, zone, northp, x_mgrs, y_mgrs, prec);
-    GeographicLib::UTMUPS::Reverse(zone, northp, x_mgrs, y_mgrs, lat, lon);
-
+    // Reverse projection from UTM to geographic.
+    GeographicLib::UTMUPS::Reverse(
+      zone, 
+      northp, 
+      grid_num_x * grid_size + x, 
+      grid_num_y * grid_size + y, 
+      lat, 
+      lon
+    );
+    
     if (cp && cp_started_) {
       cp->updateMGRS(&x, &y);
       cp->updateRP(&lat, &lon, &z);
@@ -123,7 +129,9 @@ namespace v2x
 
     context.set_link_layer(link_layer.get());
 
-    cp = new CpmApplication(node_, trigger.runtime());
+    bool is_sender;
+    node_->get_parameter("is_sender", is_sender);
+    cp = new CpmApplication(node_, trigger.runtime(), is_sender);
     
     context.enable(cp);
 

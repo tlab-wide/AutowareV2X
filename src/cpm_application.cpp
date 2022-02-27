@@ -21,6 +21,9 @@
 #include <GeographicLib/MGRS.hpp>
 #include <string>
 
+#include <boost/units/cmath.hpp>
+#include <boost/units/systems/si/prefixes.hpp>
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -29,17 +32,17 @@ using namespace vanetza::facilities;
 using namespace std::chrono;
 
 namespace v2x {
-  CpmApplication::CpmApplication(V2XNode *node, Runtime &rt) :     
+  CpmApplication::CpmApplication(V2XNode *node, Runtime &rt, bool is_sender) :     
     node_(node),
     runtime_(rt),
     ego_(),
     generationDeltaTime_(0),
     updating_objects_stack_(false),
     sending_(false),
-    is_sender_(true),
+    is_sender_(is_sender),
     reflect_packet_(false)
   {
-    RCLCPP_INFO(node_->get_logger(), "CpmApplication started...");
+    RCLCPP_INFO(node_->get_logger(), "CpmApplication started. is_sender: %d", is_sender_);
     set_interval(milliseconds(100));
   }
 
@@ -68,10 +71,10 @@ namespace v2x {
     std::shared_ptr<const asn1::Cpm> cpm = boost::apply_visitor(visitor, *packet);
 
     if (cpm) {
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] Received decodable CPM content");
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] Received decodable CPM content");
 
       rclcpp::Time current_time = node_->now();
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_receive_r1 %ld", current_time.nanoseconds());
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_receive_r1 %ld", current_time.nanoseconds());
 
       asn1::Cpm message = *cpm;
       ItsPduHeader_t &header = message->header;
@@ -81,34 +84,36 @@ namespace v2x {
       const auto time_now = duration_cast<milliseconds> (runtime_.now().time_since_epoch());
       uint16_t gdt = time_now.count();
       int gdt_diff = (65536 + (gdt - gdt_cpm) % 65536) % 65536;
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT_CPM: %ld", gdt_cpm);
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT: %u", gdt);
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_R1R2: %d", gdt_diff);
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT_CPM: %ld", gdt_cpm);
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT: %u", gdt);
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_R1R2: %d", gdt_diff);
 
 
       CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;
       double lat = management.referencePosition.latitude / 1.0e7;
       double lon = management.referencePosition.longitude / 1.0e7;
-      // RCLCPP_INFO(node_->get_logger(), "cpm.(reference position) = %f, %f", lat, lon);
 
-      std::string mgrs;
       int zone;
+      int grid_num_x = 4;
+      int grid_num_y = 39;
+      int grid_size = 100000;
       bool northp;
       double x, y;
+
       GeographicLib::UTMUPS::Forward(lat, lon, zone, northp, x, y);
-      GeographicLib::MGRS::Forward(zone, northp, x, y, lat, 5, mgrs);
+      double x_mgrs = x - grid_num_x * grid_size;
+      double y_mgrs = y - grid_num_y * grid_size;
 
-      int x_mgrs = std::stoi(mgrs.substr(5, 5));
-      int y_mgrs = std::stoi(mgrs.substr(10, 5));
-      // RCLCPP_INFO(node_->get_logger(), "cpm.(RP).mgrs = %s, %d, %d", mgrs.c_str(), x_mgrs, y_mgrs);
-
-      // Calculate orientation from Heading
       OriginatingVehicleContainer_t &ovc = message->cpm.cpmParameters.stationDataContainer->choice.originatingVehicleContainer;
+
+      // Calculate ego-vehicle orientation (radians) from heading (degree).
+      // orientation: True-East, counter-clockwise angle. (0.1 degree accuracy)
       int heading = ovc.heading.headingValue;
-      // double orientation = 1.5708 - (M_PI * heading / 10) / 180;
-      double orientation = (90.0 - heading / 10.0) * M_PI / 180;
-      if (orientation < 0.0) orientation += (2 * M_PI);
-      // RCLCPP_INFO(node_->get_logger(), "cpm: heading = %d, orientation = %f", heading, orientation);
+      double orientation = (90.0 - (double) heading / 10.0) * M_PI / 180.0;
+      if (orientation < 0.0) orientation += (2.0 * M_PI);
+      // double orientation = heading / 10.0;
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] heading: %d", heading);
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] orientation: %f", orientation);
 
       // Get PerceivedObjects
       receivedObjectsStack.clear();
@@ -117,24 +122,21 @@ namespace v2x {
 
       if (poc != NULL) {
         for (int i = 0; i < poc->list.count; ++i) {
-          RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
+          // RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
 
           CpmApplication::Object object;
           double x1 = poc->list.array[i]->xDistance.value;
           double y1 = poc->list.array[i]->yDistance.value;
-          // RCLCPP_INFO(node_->get_logger(), "cpm object: xDistance: %f, yDistance: %f", x1, y1);
           x1 = x1 / 100.0;
           y1 = y1 / 100.0;
           object.position_x = x_mgrs + (cos(orientation) * x1 - sin(orientation) * y1);
-          object.position_y = y_mgrs + (sin(orientation) * x1 + cos(orientation) * y1);
-          // RCLCPP_INFO(node_->get_logger(), "cpm object: %f, %f, %f, %f", x1, y1, object.position_x, object.position_y);
-          
+          object.position_y = y_mgrs + (sin(orientation) * x1 + cos(orientation) * y1);          
           object.shape_x = poc->list.array[i]->planarObjectDimension2->value;
           object.shape_y = poc->list.array[i]->planarObjectDimension1->value;
           object.shape_z = poc->list.array[i]->verticalObjectDimension->value;
 
           object.yawAngle = poc->list.array[i]->yawAngle->value;
-          double yaw_radian = (M_PI * object.yawAngle / 10) / 180;
+          double yaw_radian = (M_PI * object.yawAngle / 10.0) / 180.0;
 
           tf2::Quaternion quat;
           quat.setRPY(0, 0, yaw_radian);
@@ -142,6 +144,7 @@ namespace v2x {
           object.orientation_y = quat.y();
           object.orientation_z = quat.z();
           object.orientation_w = quat.w();
+          // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] object.quat: %f, %f, %f, %f", object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
 
           receivedObjectsStack.push_back(object);
         }
@@ -177,6 +180,7 @@ namespace v2x {
   void CpmApplication::updateMGRS(double *x, double *y) {
     ego_.mgrs_x = *x;
     ego_.mgrs_y = *y;
+    // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateMGRS] ego-vehicle.position: %.10f, %.10f", ego_.mgrs_x, ego_.mgrs_y);
   }
 
   void CpmApplication::updateRP(double *lat, double *lon, double *altitude) {
@@ -220,10 +224,14 @@ namespace v2x {
         object.shape_x = std::lround(obj.shape.dimensions.x * 10.0);
         object.shape_y = std::lround(obj.shape.dimensions.y * 10.0);
         object.shape_z = std::lround(obj.shape.dimensions.z * 10.0);
-        // object.xDistance = std::lround(((object.position_x - ego_x_) * cos(-ego_heading_) - (object.position_y - ego_y_) * sin(-ego_heading_)) * 100.0);
-        // object.yDistance = std::lround(((object.position_x - ego_x_) * sin(-ego_heading_) + (object.position_y - ego_y_) * cos(-ego_heading_)) * 100.0);
-        object.xDistance = std::lround(((object.position_x - ego_.mgrs_x) * cos(-ego_.heading) - (object.position_y - ego_.mgrs_y) * sin(-ego_.heading)) * 100.0);
-        object.yDistance = std::lround(((object.position_x - ego_.mgrs_x) * sin(-ego_.heading) + (object.position_y - ego_.mgrs_y) * cos(-ego_.heading)) * 100.0);
+
+        // xDistance, yDistance: Int (-132768..132767), 0.01 meter accuracy
+        object.xDistance = std::lround((
+          (object.position_x - ego_.mgrs_x) * cos(-ego_.heading) - (object.position_y - ego_.mgrs_y) * sin(-ego_.heading)
+          ) * 100.0);
+        object.yDistance = std::lround((
+          (object.position_x - ego_.mgrs_x) * sin(-ego_.heading) + (object.position_y - ego_.mgrs_y) * cos(-ego_.heading)
+          ) * 100.0);
         if (object.xDistance < -132768 || object.xDistance > 132767) {
           continue;
         }
@@ -233,6 +241,7 @@ namespace v2x {
         object.xSpeed = 0;
         object.ySpeed = 0;
 
+        // Calculate orientation of detected object
         tf2::Quaternion quat(object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
         tf2::Matrix3x3 matrix(quat);
         double roll, pitch, yaw;
@@ -242,6 +251,8 @@ namespace v2x {
         } else {
           object.yawAngle = std::lround((yaw * 180.0 / M_PI) * 10.0); // 0 - 3600
         }
+        // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] object.yawAngle: %d", object.yawAngle);
+        // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] object.quat: %f, %f, %f, %f", object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
         
         long long msg_timestamp_sec = msg->header.stamp.sec;
         long long msg_timestamp_nsec = msg->header.stamp.nanosec;
@@ -257,12 +268,12 @@ namespace v2x {
         objectsStack.push_back(object);
         ++i;
         
-        RCLCPP_INFO(node_->get_logger(), "Added to stack: #%d (%d, %d) (%d, %d) (%d, %d, %d) (%f: %d)", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_x, object.shape_y, object.shape_z, yaw, object.yawAngle);
+        // RCLCPP_INFO(node_->get_logger(), "Added to stack: #%d (%d, %d) (%d, %d) (%d, %d, %d) (%f: %d)", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_x, object.shape_y, object.shape_z, yaw, object.yawAngle);
       }
     }
-    RCLCPP_INFO(node_->get_logger(), "ObjectsStack: %d objects", objectsStack.size());
+    // RCLCPP_INFO(node_->get_logger(), "ObjectsStack: %d objects", objectsStack.size());
     rclcpp::Time current_time = node_->now();
-    RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] [measure] T_objstack_updated %ld", current_time.nanoseconds());
+    // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] [measure] T_objstack_updated %ld", current_time.nanoseconds());
     updating_objects_stack_ = false;
   }
 
@@ -271,7 +282,7 @@ namespace v2x {
     if (is_sender_) {
       sending_ = true;
       
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM...");
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM...");
 
       vanetza::asn1::Cpm message;
 
@@ -288,12 +299,8 @@ namespace v2x {
 
       CpmManagementContainer_t &management = cpm.cpmParameters.managementContainer;
       management.stationType = StationType_passengerCar;
-      PositionFix fix;
-      fix.latitude = ego_.latitude * units::degree;
-      fix.longitude = ego_.longitude * units::degree;
-      fix.confidence.semi_major = 1.0 * units::si::meter;
-      fix.confidence.semi_minor = fix.confidence.semi_major;
-      copy(fix, management.referencePosition);
+      management.referencePosition.latitude = ego_.latitude * 1e7;
+      management.referencePosition.longitude = ego_.longitude * 1e7;
       cpm.cpmParameters.numberOfPerceivedObjects = objectsStack.size();
 
       StationDataContainer_t *&sdc = cpm.cpmParameters.stationDataContainer;
@@ -302,6 +309,9 @@ namespace v2x {
       OriginatingVehicleContainer_t &ovc = sdc->choice.originatingVehicleContainer;
       ovc.speed.speedValue = 0;
       ovc.speed.speedConfidence = 1;
+
+      // Calculate headingValue of ego-vehicle.
+      // Convert ego-vehicle yaw to True-North clockwise angle (heading). 0.1 degree accuracy.
       int heading = std::lround(((-ego_.heading * 180.0 / M_PI) + 90.0) * 10.0);
       if (heading < 0) heading += 3600;
       ovc.heading.headingValue = heading;
@@ -339,7 +349,7 @@ namespace v2x {
           (*(pObj->yawAngle)).value = object.yawAngle;
           (*(pObj->yawAngle)).confidence = 1;
 
-          RCLCPP_INFO(node_->get_logger(), "[SEND] Added: #%d (%d, %d) (%d, %d) (%d, %d, %d) %d", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_y, object.shape_x, object.shape_z, object.yawAngle);
+          // RCLCPP_INFO(node_->get_logger(), "[SEND] Added: #%d (%d, %d) (%d, %d) (%d, %d, %d) %d", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_y, object.shape_x, object.shape_z, object.yawAngle);
 
           ASN_SEQUENCE_ADD(poc, pObj);
         }
@@ -366,7 +376,7 @@ namespace v2x {
 
       sending_ = false;
       rclcpp::Time current_time = node_->now();
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] [measure] T_depart_r1 %ld", current_time.nanoseconds());
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] [measure] T_depart_r1 %ld", current_time.nanoseconds());
 
     }
   }
