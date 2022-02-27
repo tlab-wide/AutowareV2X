@@ -14,7 +14,7 @@ namespace v2x
     class CpmApplication : public Application
     {
     public:
-        CpmApplication(V2XNode *node, vanetza::Runtime &);
+        CpmApplication(V2XNode *node, vanetza::Runtime &, bool is_sender);
         PortType port() override;
         void indicate(const DataIndication &, UpPacketPtr) override;
         void set_interval(vanetza::Clock::duration);
