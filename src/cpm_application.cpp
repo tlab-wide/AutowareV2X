@@ -65,13 +65,21 @@ namespace v2x {
     return btp::ports::CPM;
   }
 
+  std::string CpmApplication::uuidToHexString(const unique_identifier_msgs::msg::UUID &id) {
+    std::stringstream ss;
+    for (auto i = 0; i < 16; ++i) {
+      ss << std::hex << std::setfill('0') << std::setw(2) << +id.uuid[i];
+    }
+    return ss.str();
+  }
+
   void CpmApplication::indicate(const DataIndication &indication, UpPacketPtr packet) {
 
     asn1::PacketVisitor<asn1::Cpm> visitor;
     std::shared_ptr<const asn1::Cpm> cpm = boost::apply_visitor(visitor, *packet);
 
     if (cpm) {
-      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] Received decodable CPM content");
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] Received CPM");
 
       rclcpp::Time current_time = node_->now();
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_receive_r1 %ld", current_time.nanoseconds());
@@ -112,8 +120,8 @@ namespace v2x {
       double orientation = (90.0 - (double) heading / 10.0) * M_PI / 180.0;
       if (orientation < 0.0) orientation += (2.0 * M_PI);
       // double orientation = heading / 10.0;
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] heading: %d", heading);
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] orientation: %f", orientation);
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] heading: %d", heading);
+      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] orientation: %f", orientation);
 
       // Get PerceivedObjects
       receivedObjectsStack.clear();
@@ -150,7 +158,7 @@ namespace v2x {
         }
         node_->publishObjects(&receivedObjectsStack);
       } else {
-        RCLCPP_INFO(node_->get_logger(), "[INDICATE] Empty POC");
+        // RCLCPP_INFO(node_->get_logger(), "[INDICATE] Empty POC");
       }
 
       if (reflect_packet_) {
@@ -198,7 +206,7 @@ namespace v2x {
     ego_.heading = *yaw;
   }
 
-  void CpmApplication::updateObjectsStack(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
+  void CpmApplication::updateObjectsStack(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
     updating_objects_stack_ = true;
 
     if (sending_) {
@@ -210,17 +218,20 @@ namespace v2x {
 
     if (msg->objects.size() > 0) {
       int i = 0;
-      for (auto obj : msg->objects) {
+      for (autoware_auto_perception_msgs::msg::PredictedObject obj : msg->objects) {
+
+        // RCLCPP_INFO(node_->get_logger(), "%d", obj.classification.front().label);
+
         CpmApplication::Object object;
         object.objectID = i;
         object.timestamp = msg->header.stamp;
-        object.position_x = obj.state.pose_covariance.pose.position.x; // MGRS
-        object.position_y = obj.state.pose_covariance.pose.position.y;
-        object.position_z = obj.state.pose_covariance.pose.position.z;
-        object.orientation_x = obj.state.pose_covariance.pose.orientation.x;
-        object.orientation_y = obj.state.pose_covariance.pose.orientation.y;
-        object.orientation_z = obj.state.pose_covariance.pose.orientation.z;
-        object.orientation_w = obj.state.pose_covariance.pose.orientation.w;
+        object.position_x = obj.kinematics.initial_pose_with_covariance.pose.position.x; // MGRS
+        object.position_y = obj.kinematics.initial_pose_with_covariance.pose.position.y;
+        object.position_z = obj.kinematics.initial_pose_with_covariance.pose.position.z;
+        object.orientation_x = obj.kinematics.initial_pose_with_covariance.pose.orientation.x;
+        object.orientation_y = obj.kinematics.initial_pose_with_covariance.pose.orientation.y;
+        object.orientation_z = obj.kinematics.initial_pose_with_covariance.pose.orientation.z;
+        object.orientation_w = obj.kinematics.initial_pose_with_covariance.pose.orientation.w;
         object.shape_x = std::lround(obj.shape.dimensions.x * 10.0);
         object.shape_y = std::lround(obj.shape.dimensions.y * 10.0);
         object.shape_z = std::lround(obj.shape.dimensions.z * 10.0);
@@ -251,8 +262,6 @@ namespace v2x {
         } else {
           object.yawAngle = std::lround((yaw * 180.0 / M_PI) * 10.0); // 0 - 3600
         }
-        // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] object.yawAngle: %d", object.yawAngle);
-        // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] object.quat: %f, %f, %f, %f", object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
         
         long long msg_timestamp_sec = msg->header.stamp.sec;
         long long msg_timestamp_nsec = msg->header.stamp.nanosec;
@@ -267,10 +276,9 @@ namespace v2x {
         }
         objectsStack.push_back(object);
         ++i;
-        
-        // RCLCPP_INFO(node_->get_logger(), "Added to stack: #%d (%d, %d) (%d, %d) (%d, %d, %d) (%f: %d)", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_x, object.shape_y, object.shape_z, yaw, object.yawAngle);
       }
     }
+
     // RCLCPP_INFO(node_->get_logger(), "ObjectsStack: %d objects", objectsStack.size());
     rclcpp::Time current_time = node_->now();
     // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] [measure] T_objstack_updated %ld", current_time.nanoseconds());

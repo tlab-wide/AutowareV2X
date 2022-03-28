@@ -3,7 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "autoware_perception_msgs/msg/dynamic_object_array.hpp"
+#include "autoware_auto_perception_msgs/msg/predicted_objects.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 #include <boost/asio/io_service.hpp>
 #include "autoware_v2x/v2x_app.hpp"
@@ -25,13 +25,12 @@ namespace v2x
     void publishObjects(std::vector<CpmApplication::Object> *);
 
   private:
-    void objectsCallback(
-        const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg);
+    void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);
     void tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg);
 
-    rclcpp::Subscription<autoware_perception_msgs::msg::DynamicObjectArray>::SharedPtr subscription_;
+    rclcpp::Subscription<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr subscription_;
     rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr subscription_pos_;
-    rclcpp::Publisher<autoware_perception_msgs::msg::DynamicObjectArray>::SharedPtr publisher_;
+    rclcpp::Publisher<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr publisher_;
 
     double pos_lat_;
     double pos_lon_;
