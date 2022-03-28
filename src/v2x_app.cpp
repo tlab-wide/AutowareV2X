@@ -38,7 +38,7 @@ namespace v2x
   {
   }
 
-  void V2XApp::objectsCallback(const autoware_perception_msgs::msg::DynamicObjectArray::ConstSharedPtr msg) {
+  void V2XApp::objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
     // RCLCPP_INFO(node_->get_logger(), "V2XApp: msg received");
     if (!tf_received_) {
       RCLCPP_WARN(node_->get_logger(), "[V2XApp::objectsCallback] tf not received yet");
