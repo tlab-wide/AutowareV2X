@@ -25,6 +25,7 @@ namespace v2x
         void updateRP(double *, double *, double *);
         void updateGenerationDeltaTime(int *, long long *);
         void updateHeading(double *);
+        void printObjectsList();
         void send();
 
         struct Object {

@@ -45,7 +45,7 @@ namespace v2x {
     include_all_persons_and_animals_(false)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started. is_sender: %d", is_sender_);
-    set_interval(milliseconds(100));
+    set_interval(milliseconds(1000));
   }
 
   void CpmApplication::set_interval(Clock::duration interval) {
@@ -245,9 +245,9 @@ namespace v2x {
         // RCLCPP_INFO(node_->get_logger(), "existence_probability: %f", existence_probability);
 
         std::string object_uuid = uuidToHexString(obj.object_id);
-        RCLCPP_INFO(node_->get_logger(), "received object_id: %s", object_uuid.c_str());
+        // RCLCPP_INFO(node_->get_logger(), "received object_id: %s", object_uuid.c_str());
 
-        RCLCPP_INFO(node_->get_logger(), "ObjectsList count: %d", objectsList.size());
+        // RCLCPP_INFO(node_->get_logger(), "ObjectsList count: %d", objectsList.size());
 
         if (existence_probability >= objectConfidenceThreshold_) {
           // ObjectConfidence > ObjectConfidenceThreshold
@@ -259,7 +259,7 @@ namespace v2x {
 
           if (found_object == objectsList.end()) {
             // Object is new to internal memory
-            RCLCPP_INFO(node_->get_logger(), "[%s] not in ObjectsList", object_uuid.c_str());
+            // RCLCPP_INFO(node_->get_logger(), "[%s] not in ObjectsList", object_uuid.c_str());
 
             // Add new object to ObjectsList
             CpmApplication::Object object;
@@ -295,7 +295,7 @@ namespace v2x {
           } else {
             
             // Object was already in internal memory
-            RCLCPP_INFO(node_->get_logger(), "[%s] already in ObjectsList",found_object->uuid.c_str());
+            // RCLCPP_INFO(node_->get_logger(), "[%s] already in ObjectsList",found_object->uuid.c_str());
 
             // Object belongs to class person or animal
             if (obj.classification.front().label == autoware_auto_perception_msgs::msg::ObjectClassification::PEDESTRIAN || obj.classification.front().label == autoware_auto_perception_msgs::msg::ObjectClassification::UNKNOWN) {
@@ -319,7 +319,7 @@ namespace v2x {
               // Euclidean absolute distance has changed by more than 4m
               double dist = pow(obj.kinematics.initial_pose_with_covariance.pose.position.x - found_object->position_x, 2) + pow(obj.kinematics.initial_pose_with_covariance.pose.position.y - found_object->position_y, 2);
               dist = sqrt(dist);
-              RCLCPP_INFO(node_->get_logger(), "Distance changed: %f", dist);
+              // RCLCPP_INFO(node_->get_logger(), "Distance changed: %f", dist);
               if (dist > 4) {
                 found_object->to_send = true;
               } else {
@@ -329,7 +329,7 @@ namespace v2x {
               // Absolute speed changed by more than 0.5 m/s
               double speed = pow(obj.kinematics.initial_twist_with_covariance.twist.linear.x - found_object->twist_linear_x, 2) + pow(obj.kinematics.initial_twist_with_covariance.twist.linear.x- found_object->twist_linear_y, 2);
               speed = sqrt(speed);
-              RCLCPP_INFO(node_->get_logger(), "Speed changed: %f", dist);
+              // RCLCPP_INFO(node_->get_logger(), "Speed changed: %f", dist);
               if (speed > 0.5) {
                 found_object->to_send = true;
               } 
@@ -337,8 +337,8 @@ namespace v2x {
               // Orientation of speed vector changed by more than 4 degrees
               double twist_angular_x_diff = (obj.kinematics.initial_twist_with_covariance.twist.angular.x - found_object->twist_angular_x) * 180 / M_PI;
               double twist_angular_y_diff = (obj.kinematics.initial_twist_with_covariance.twist.angular.y - found_object->twist_angular_y) * 180 / M_PI;
-              RCLCPP_INFO(node_->get_logger(), "Orientation speed vector changed x: %f", twist_angular_x_diff);
-              RCLCPP_INFO(node_->get_logger(), "Orientation speed vector changed y: %f", twist_angular_y_diff);
+              // RCLCPP_INFO(node_->get_logger(), "Orientation speed vector changed x: %f", twist_angular_x_diff);
+              // RCLCPP_INFO(node_->get_logger(), "Orientation speed vector changed y: %f", twist_angular_y_diff);
               if( twist_angular_x_diff > 4 || twist_angular_y_diff > 4 ) {
                 found_object->to_send = true;
               }
@@ -347,7 +347,7 @@ namespace v2x {
               // It has been more than 1 s since last transmission of this object
               if (runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count() > 1000000) {
                 found_object->to_send = true;
-                RCLCPP_INFO(node_->get_logger(), "Been more than 1s: %ld", runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count());
+                // RCLCPP_INFO(node_->get_logger(), "Been more than 1s: %ld", runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count());
               }
 
             }
@@ -394,9 +394,23 @@ namespace v2x {
     updating_objects_list_ = false;
   }
 
+  void CpmApplication::printObjectsList() {
+    int i = 0;
+    RCLCPP_INFO(node_->get_logger(), "------------------------");
+    for (auto& object : objectsList) {
+      RCLCPP_INFO(node_->get_logger(), "%d: %s \t %d", i, object.uuid.c_str(), object.to_send);
+      ++i;
+    }
+    RCLCPP_INFO(node_->get_logger(), "------------------------");
+  }
+
   void CpmApplication::send() {
 
     if (is_sender_) {
+
+      printObjectsList();
+
+
       sending_ = true;
       
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM...");
@@ -500,15 +514,15 @@ namespace v2x {
             ASN_SEQUENCE_ADD(poc, pObj);
 
             object.to_send = false;
-            RCLCPP_INFO(node_->get_logger(), "Sending object: %s", object.uuid.c_str());
+            // RCLCPP_INFO(node_->get_logger(), "Sending object: %s", object.uuid.c_str());
           } else {
             // Object.to_send is set to False
-            RCLCPP_INFO(node_->get_logger(), "Object: %s not being sent.", object.uuid.c_str());
+            // RCLCPP_INFO(node_->get_logger(), "Object: %s not being sent.", object.uuid.c_str());
           }
         }
       } else {
         cpm.cpmParameters.perceivedObjectContainer = NULL;
-        RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Empty POC");
+        // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Empty POC");
       }
       
       Application::DownPacketPtr packet{new DownPacket()};
