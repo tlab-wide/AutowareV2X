@@ -45,7 +45,7 @@ ament_auto_add_library(autoware_v2x SHARED
   src/security.cpp
 )
 
-target_link_libraries(autoware_v2x Vanetza::vanetza ${GeographicLib_LIBRARIES} Boost::thread)
+target_link_libraries(autoware_v2x Vanetza::vanetza ${GeographicLib_LIBRARIES} Boost::thread sqlite3)
 
 rclcpp_components_register_node(autoware_v2x
   PLUGIN "v2x::V2XNode"
