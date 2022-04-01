@@ -446,7 +446,6 @@ namespace v2x {
       management.stationType = StationType_passengerCar;
       management.referencePosition.latitude = ego_.latitude * 1e7;
       management.referencePosition.longitude = ego_.longitude * 1e7;
-      cpm.cpmParameters.numberOfPerceivedObjects = objectsList.size();
 
       StationDataContainer_t *&sdc = cpm.cpmParameters.stationDataContainer;
       sdc = vanetza::asn1::allocate<StationDataContainer_t>();
@@ -462,6 +461,8 @@ namespace v2x {
       ovc.heading.headingValue = heading;
       ovc.heading.headingConfidence = 1;
 
+      int perceivedObjectsCount = 0;
+
       if (objectsList.size() > 0) {
         PerceivedObjectContainer_t *&poc = cpm.cpmParameters.perceivedObjectContainer;
         poc = vanetza::asn1::allocate<PerceivedObjectContainer_t>();
@@ -471,6 +472,7 @@ namespace v2x {
           // RCLCPP_INFO(node_->get_logger(), "object.to_send: %d", object.to_send);
 
           if (object.to_send) {
+
             PerceivedObject *pObj = vanetza::asn1::allocate<PerceivedObject>();
 
             // Update CPM-specific values for Object
@@ -531,15 +533,23 @@ namespace v2x {
 
             object.to_send = false;
             // RCLCPP_INFO(node_->get_logger(), "Sending object: %s", object.uuid.c_str());
+
+            ++perceivedObjectsCount;
+
           } else {
             // Object.to_send is set to False
             // RCLCPP_INFO(node_->get_logger(), "Object: %s not being sent.", object.uuid.c_str());
           }
         }
+
+        cpm.cpmParameters.numberOfPerceivedObjects =perceivedObjectsCount;
+
       } else {
         cpm.cpmParameters.perceivedObjectContainer = NULL;
         // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Empty POC");
       }
+
+      insertCpmToCpmTable(message, (char*) "cpm_sent");
       
       Application::DownPacketPtr packet{new DownPacket()};
       std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
@@ -577,7 +587,7 @@ namespace v2x {
 
     char* sql_command;
     
-    sql_command = "create table if not exists cpm_sent(id INTEGER PRIMARY KEY, timestamp INTEGER, perceivedObjectCount INTEGER);";
+    sql_command = (char*) "create table if not exists cpm_sent(id INTEGER PRIMARY KEY, timestamp BIGINT, perceivedObjectCount INTEGER);";
 
     ret = sqlite3_exec(db, sql_command, NULL, NULL, &err);
     if (ret != SQLITE_OK) {
@@ -587,7 +597,7 @@ namespace v2x {
       return;
     }
 
-    sql_command = "create table if not exists cpm_received(id INTEGER PRIMARY KEY, timestamp INTEGER, perceivedObjectCount INTEGER);";
+    sql_command = (char*) "create table if not exists cpm_received(id INTEGER PRIMARY KEY, timestamp BIGINT, perceivedObjectCount INTEGER);";
 
     ret = sqlite3_exec(db, sql_command, NULL, NULL, &err);
     if (ret != SQLITE_OK) {
@@ -602,6 +612,34 @@ namespace v2x {
   }
 
   void CpmApplication::insertCpmToCpmTable(vanetza::asn1::Cpm cpm, char* table_name) {
+    sqlite3 *db = NULL;
+    char* err = NULL;
 
+    int ret = sqlite3_open("./src/autoware_v2x/db/autoware_v2x.db", &db);
+    if (ret != SQLITE_OK) {
+      RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
+      return;
+    }
+
+    int64_t timestamp = duration_cast<milliseconds>(runtime_.now().time_since_epoch()).count();
+    int perceivedObjectCount = 0;
+    if (cpm->cpm.cpmParameters.numberOfPerceivedObjects) {
+      perceivedObjectCount = cpm->cpm.cpmParameters.numberOfPerceivedObjects;
+    }
+
+    std::stringstream sql_command;
+    
+    sql_command << "insert into " << table_name << " (timestamp, perceivedObjectCount) values (" << timestamp << ", " << perceivedObjectCount << ");";
+
+    ret = sqlite3_exec(db, sql_command.str().c_str(), NULL, NULL, &err);
+    if (ret != SQLITE_OK) {
+      RCLCPP_INFO(node_->get_logger(), "DB Execution Error");
+      sqlite3_close(db);
+      sqlite3_free(err);
+      return;
+    }
+
+    sqlite3_close(db);
+    // RCLCPP_INFO(node_->get_logger(), "CpmApplication::insertCpmToCpmTable Finished");
   }
 }
