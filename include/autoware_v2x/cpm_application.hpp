@@ -39,7 +39,7 @@ namespace v2x
          *  @param cpm The CPM to be inserted 
          *  @param table_name The table to insert the CPM into (cpm_sent or cpm_received)
         */
-        void insertCpmToCpmTable(vanetza::asn1::Cpm, char* table_name);
+        void insertCpmToCpmTable(vanetza::asn1::Cpm, char*);
 
         struct Object {
             std::string uuid;
