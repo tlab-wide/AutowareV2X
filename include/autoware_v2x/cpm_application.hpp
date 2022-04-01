@@ -25,7 +25,7 @@ namespace v2x
         void updateRP(double *, double *, double *);
         void updateGenerationDeltaTime(int *, long long *);
         void updateHeading(double *);
-        void printObjectsList();
+        void printObjectsList(int);
         void send();
 
         struct Object {
@@ -55,6 +55,7 @@ namespace v2x
             vanetza::PositionFix position;
             int timeOfMeasurement;
             bool to_send;
+            int to_send_trigger;
         };
         std::vector<CpmApplication::Object> objectsList;
         std::vector<CpmApplication::Object> receivedObjectsStack;
@@ -88,6 +89,11 @@ namespace v2x
         bool is_sender_;
         bool reflect_packet_;
         bool include_all_persons_and_animals_;
+
+        int cpm_num_;
+        int received_cpm_num_;
+
+        int cpm_object_id_;
     };
 }
 

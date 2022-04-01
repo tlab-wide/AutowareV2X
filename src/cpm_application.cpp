@@ -42,10 +42,13 @@ namespace v2x {
     is_sender_(is_sender),
     reflect_packet_(false),
     objectConfidenceThreshold_(0.0),
-    include_all_persons_and_animals_(false)
+    include_all_persons_and_animals_(false),
+    cpm_num_(0),
+    received_cpm_num_(0),
+    cpm_object_id_(0)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started. is_sender: %d", is_sender_);
-    set_interval(milliseconds(1000));
+    set_interval(milliseconds(100));
   }
 
   void CpmApplication::set_interval(Clock::duration interval) {
@@ -81,7 +84,7 @@ namespace v2x {
     std::shared_ptr<const asn1::Cpm> cpm = boost::apply_visitor(visitor, *packet);
 
     if (cpm) {
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] Received CPM");
+      RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received CPM #%d", received_cpm_num_);
 
       rclcpp::Time current_time = node_->now();
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_receive_r1 %ld", current_time.nanoseconds());
@@ -132,7 +135,7 @@ namespace v2x {
 
       if (poc != NULL) {
         for (int i = 0; i < poc->list.count; ++i) {
-          // RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
+          RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
 
           CpmApplication::Object object;
           double x1 = poc->list.array[i]->xDistance.value;
@@ -181,6 +184,7 @@ namespace v2x {
         }
       }
 
+      ++received_cpm_num_;
 
     } else {
       RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received broken content");
@@ -237,7 +241,6 @@ namespace v2x {
     }
 
     if (msg->objects.size() > 0) {
-      int i = 0;
       for (autoware_auto_perception_msgs::msg::PredictedObject obj : msg->objects) {
 
         // RCLCPP_INFO(node_->get_logger(), "%d", obj.classification.front().label);
@@ -259,11 +262,14 @@ namespace v2x {
 
           if (found_object == objectsList.end()) {
             // Object is new to internal memory
-            // RCLCPP_INFO(node_->get_logger(), "[%s] not in ObjectsList", object_uuid.c_str());
+
+            if (cpm_object_id_ > 255) {
+              cpm_object_id_ = 0;
+            }
 
             // Add new object to ObjectsList
             CpmApplication::Object object;
-            object.objectID = i;
+            object.objectID = cpm_object_id_;
             object.uuid = object_uuid;
             object.timestamp_ros = msg->header.stamp;
             object.position_x = obj.kinematics.initial_pose_with_covariance.pose.position.x;
@@ -288,27 +294,30 @@ namespace v2x {
             }
 
             object.to_send = false;
+            object.to_send_trigger = 0;
             object.timestamp = runtime_.now();
 
             objectsList.push_back(object);
+            ++cpm_object_id_;
 
           } else {
             
             // Object was already in internal memory
-            // RCLCPP_INFO(node_->get_logger(), "[%s] already in ObjectsList",found_object->uuid.c_str());
 
             // Object belongs to class person or animal
             if (obj.classification.front().label == autoware_auto_perception_msgs::msg::ObjectClassification::PEDESTRIAN || obj.classification.front().label == autoware_auto_perception_msgs::msg::ObjectClassification::UNKNOWN) {
 
               if (include_all_persons_and_animals_) {
                 found_object->to_send = true;
+                found_object->to_send_trigger = 5;
               }
               
               // Object has not been included in a CPM in the past 500 ms.
-              if (runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count() > 500) {
+              if (runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count() > 500000) {
                 // Include all objects of class person or animal in the current CPM
                 include_all_persons_and_animals_ = true;
                 found_object->to_send = true;
+                found_object->to_send_trigger = 5;
                 setAllObjectsOfPersonsAnimalsToSend(msg);
                 RCLCPP_INFO(node_->get_logger(), "Include all objects of person/animal class");
               }
@@ -322,6 +331,7 @@ namespace v2x {
               // RCLCPP_INFO(node_->get_logger(), "Distance changed: %f", dist);
               if (dist > 4) {
                 found_object->to_send = true;
+                found_object->to_send_trigger = 1;
               } else {
                 
               }
@@ -332,6 +342,7 @@ namespace v2x {
               // RCLCPP_INFO(node_->get_logger(), "Speed changed: %f", dist);
               if (speed > 0.5) {
                 found_object->to_send = true;
+                found_object->to_send_trigger = 2;
               } 
 
               // Orientation of speed vector changed by more than 4 degrees
@@ -341,12 +352,14 @@ namespace v2x {
               // RCLCPP_INFO(node_->get_logger(), "Orientation speed vector changed y: %f", twist_angular_y_diff);
               if( twist_angular_x_diff > 4 || twist_angular_y_diff > 4 ) {
                 found_object->to_send = true;
+                found_object->to_send_trigger = 3;
               }
 
 
               // It has been more than 1 s since last transmission of this object
               if (runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count() > 1000000) {
                 found_object->to_send = true;
+                found_object->to_send_trigger = 4;
                 // RCLCPP_INFO(node_->get_logger(), "Been more than 1s: %ld", runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count());
               }
 
@@ -377,12 +390,8 @@ namespace v2x {
 
             found_object->timestamp = runtime_.now();
 
-
           }
         }
-
-       
-        ++i;
       }
     } else {
       // No objects detected
@@ -394,24 +403,26 @@ namespace v2x {
     updating_objects_list_ = false;
   }
 
-  void CpmApplication::printObjectsList() {
-    int i = 0;
-    RCLCPP_INFO(node_->get_logger(), "------------------------");
-    for (auto& object : objectsList) {
-      RCLCPP_INFO(node_->get_logger(), "%d: %s \t %d", i, object.uuid.c_str(), object.to_send);
-      ++i;
+  void CpmApplication::printObjectsList(int cpm_num) {
+    // RCLCPP_INFO(node_->get_logger(), "------------------------");
+    if (objectsList.size() > 0) {
+      for (auto& object : objectsList) {
+        RCLCPP_INFO(node_->get_logger(), "[objectsList] %d,%d,%s,%d,%d", cpm_num, object.objectID, object.uuid.c_str(), object.to_send, object.to_send_trigger);
+      }
+    } else {
+      RCLCPP_INFO(node_->get_logger(), "[objectsList] %d,,,,", cpm_num);
     }
-    RCLCPP_INFO(node_->get_logger(), "------------------------");
+    
+    // RCLCPP_INFO(node_->get_logger(), "------------------------");
   }
 
   void CpmApplication::send() {
 
     if (is_sender_) {
 
-      printObjectsList();
-
-
       sending_ = true;
+
+      printObjectsList(cpm_num_);
       
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM...");
 
@@ -467,9 +478,11 @@ namespace v2x {
               (object.position_x - ego_.mgrs_x) * sin(-ego_.heading) + (object.position_y - ego_.mgrs_y) * cos(-ego_.heading)
               ) * 100.0);
             if (object.xDistance < -132768 || object.xDistance > 132767) {
+              RCLCPP_WARN(node_->get_logger(), "xDistance out of bounds. objectID: #%d", object.objectID);
               continue;
             }
             if (object.yDistance < -132768 || object.yDistance > 132767) {
+              RCLCPP_WARN(node_->get_logger(), "yDistance out of bounds. objectID: #%d", object.objectID);
               continue;
             }
 
@@ -545,6 +558,7 @@ namespace v2x {
       rclcpp::Time current_time = node_->now();
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] [measure] T_depart_r1 %ld", current_time.nanoseconds());
 
+      ++cpm_num_;
     }
   }
 }
