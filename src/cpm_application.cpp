@@ -24,6 +24,8 @@
 #include <boost/units/cmath.hpp>
 #include <boost/units/systems/si/prefixes.hpp>
 
+#include <sqlite3.h>
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -49,6 +51,7 @@ namespace v2x {
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started. is_sender: %d", is_sender_);
     set_interval(milliseconds(100));
+    createTables();
   }
 
   void CpmApplication::set_interval(Clock::duration interval) {
@@ -563,7 +566,39 @@ namespace v2x {
   }
 
   void CpmApplication::createTables() {
+    sqlite3 *db = NULL;
+    char* err = NULL;
 
+    int ret = sqlite3_open("./src/autoware_v2x/db/autoware_v2x.db", &db);
+    if (ret != SQLITE_OK) {
+      RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
+      return;
+    }
+
+    char* sql_command;
+    
+    sql_command = "create table if not exists cpm_sent(id INTEGER PRIMARY KEY, timestamp INTEGER, perceivedObjectCount INTEGER);";
+
+    ret = sqlite3_exec(db, sql_command, NULL, NULL, &err);
+    if (ret != SQLITE_OK) {
+      RCLCPP_INFO(node_->get_logger(), "DB Execution Error");
+      sqlite3_close(db);
+      sqlite3_free(err);
+      return;
+    }
+
+    sql_command = "create table if not exists cpm_received(id INTEGER PRIMARY KEY, timestamp INTEGER, perceivedObjectCount INTEGER);";
+
+    ret = sqlite3_exec(db, sql_command, NULL, NULL, &err);
+    if (ret != SQLITE_OK) {
+      RCLCPP_INFO(node_->get_logger(), "DB Execution Error");
+      sqlite3_close(db);
+      sqlite3_free(err);
+      return;
+    }
+
+    sqlite3_close(db);
+    RCLCPP_INFO(node_->get_logger(), "CpmApplication::createTables Finished");
   }
 
   void CpmApplication::insertCpmToCpmTable(vanetza::asn1::Cpm cpm, char* table_name) {
