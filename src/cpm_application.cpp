@@ -561,4 +561,12 @@ namespace v2x {
       ++cpm_num_;
     }
   }
+
+  void CpmApplication::createTables() {
+
+  }
+
+  void CpmApplication::insertCpmToCpmTable(vanetza::asn1::Cpm cpm, char* table_name) {
+
+  }
 }
