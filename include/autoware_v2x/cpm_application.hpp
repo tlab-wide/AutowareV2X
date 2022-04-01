@@ -19,16 +19,20 @@ namespace v2x
         std::string uuidToHexString(const unique_identifier_msgs::msg::UUID&);
         void indicate(const DataIndication &, UpPacketPtr) override;
         void set_interval(vanetza::Clock::duration);
-        void updateObjectsStack(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
+        void setAllObjectsOfPersonsAnimalsToSend(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
+        void updateObjectsList(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
         void updateMGRS(double *, double *);
         void updateRP(double *, double *, double *);
         void updateGenerationDeltaTime(int *, long long *);
         void updateHeading(double *);
+        void printObjectsList(int);
         void send();
 
         struct Object {
-            int objectID; // 0-255
-            rclcpp::Time timestamp;
+            std::string uuid;
+            int objectID; // 0-255 for CPM
+            vanetza::Clock::time_point timestamp;
+            rclcpp::Time timestamp_ros;
             double position_x;
             double position_y;
             double position_z;
@@ -36,6 +40,10 @@ namespace v2x
             double orientation_y;
             double orientation_z;
             double orientation_w;
+            double twist_linear_x;
+            double twist_linear_y;
+            double twist_angular_x;
+            double twist_angular_y;
             int shape_x;
             int shape_y;
             int shape_z;
@@ -46,8 +54,10 @@ namespace v2x
             int yawAngle;
             vanetza::PositionFix position;
             int timeOfMeasurement;
+            bool to_send;
+            int to_send_trigger;
         };
-        std::vector<CpmApplication::Object> objectsStack;
+        std::vector<CpmApplication::Object> objectsList;
         std::vector<CpmApplication::Object> receivedObjectsStack;
 
     private:
@@ -72,10 +82,18 @@ namespace v2x
         int generationDeltaTime_;
         long long gdt_timestamp_;
 
-        bool updating_objects_stack_;
+        double objectConfidenceThreshold_;
+
+        bool updating_objects_list_;
         bool sending_;
         bool is_sender_;
         bool reflect_packet_;
+        bool include_all_persons_and_animals_;
+
+        int cpm_num_;
+        int received_cpm_num_;
+
+        int cpm_object_id_;
     };
 }
 

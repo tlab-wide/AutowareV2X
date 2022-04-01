@@ -44,7 +44,7 @@ namespace v2x
       RCLCPP_WARN(node_->get_logger(), "[V2XApp::objectsCallback] tf not received yet");
     }
     if (tf_received_ && cp_started_) {
-      cp->updateObjectsStack(msg);
+      cp->updateObjectsList(msg);
     }
   }
 

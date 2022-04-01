@@ -37,10 +37,15 @@ namespace v2x {
     runtime_(rt),
     ego_(),
     generationDeltaTime_(0),
-    updating_objects_stack_(false),
+    updating_objects_list_(false),
     sending_(false),
     is_sender_(is_sender),
-    reflect_packet_(false)
+    reflect_packet_(false),
+    objectConfidenceThreshold_(0.0),
+    include_all_persons_and_animals_(false),
+    cpm_num_(0),
+    received_cpm_num_(0),
+    cpm_object_id_(0)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started. is_sender: %d", is_sender_);
     set_interval(milliseconds(100));
@@ -79,7 +84,7 @@ namespace v2x {
     std::shared_ptr<const asn1::Cpm> cpm = boost::apply_visitor(visitor, *packet);
 
     if (cpm) {
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] Received CPM");
+      RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received CPM #%d", received_cpm_num_);
 
       rclcpp::Time current_time = node_->now();
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_receive_r1 %ld", current_time.nanoseconds());
@@ -130,7 +135,7 @@ namespace v2x {
 
       if (poc != NULL) {
         for (int i = 0; i < poc->list.count; ++i) {
-          // RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
+          RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
 
           CpmApplication::Object object;
           double x1 = poc->list.array[i]->xDistance.value;
@@ -179,6 +184,7 @@ namespace v2x {
         }
       }
 
+      ++received_cpm_num_;
 
     } else {
       RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received broken content");
@@ -206,89 +212,217 @@ namespace v2x {
     ego_.heading = *yaw;
   }
 
-  void CpmApplication::updateObjectsStack(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
-    updating_objects_stack_ = true;
+  void CpmApplication::setAllObjectsOfPersonsAnimalsToSend(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
+    if (msg->objects.size() > 0) {
+      for (autoware_auto_perception_msgs::msg::PredictedObject obj : msg->objects) {
+        std::string object_uuid = uuidToHexString(obj.object_id);
+        auto found_object = std::find_if(objectsList.begin(), objectsList.end(), [&](auto const &e) {
+          return !strcmp(e.uuid.c_str(), object_uuid.c_str());
+        });
+
+        if (found_object == objectsList.end()) {
+          
+        } else {
+          found_object->to_send = true;
+        }
+      }
+
+    }
+  }
+
+  void CpmApplication::updateObjectsList(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
+    updating_objects_list_ = true;
 
     if (sending_) {
       RCLCPP_INFO(node_->get_logger(), "updateObjectsStack Skipped...");
       return;
     } else {
-      objectsStack.clear();
+      // objectsList.clear();
     }
 
     if (msg->objects.size() > 0) {
-      int i = 0;
       for (autoware_auto_perception_msgs::msg::PredictedObject obj : msg->objects) {
 
         // RCLCPP_INFO(node_->get_logger(), "%d", obj.classification.front().label);
+        double existence_probability = obj.existence_probability;
+        // RCLCPP_INFO(node_->get_logger(), "existence_probability: %f", existence_probability);
 
-        CpmApplication::Object object;
-        object.objectID = i;
-        object.timestamp = msg->header.stamp;
-        object.position_x = obj.kinematics.initial_pose_with_covariance.pose.position.x; // MGRS
-        object.position_y = obj.kinematics.initial_pose_with_covariance.pose.position.y;
-        object.position_z = obj.kinematics.initial_pose_with_covariance.pose.position.z;
-        object.orientation_x = obj.kinematics.initial_pose_with_covariance.pose.orientation.x;
-        object.orientation_y = obj.kinematics.initial_pose_with_covariance.pose.orientation.y;
-        object.orientation_z = obj.kinematics.initial_pose_with_covariance.pose.orientation.z;
-        object.orientation_w = obj.kinematics.initial_pose_with_covariance.pose.orientation.w;
-        object.shape_x = std::lround(obj.shape.dimensions.x * 10.0);
-        object.shape_y = std::lround(obj.shape.dimensions.y * 10.0);
-        object.shape_z = std::lround(obj.shape.dimensions.z * 10.0);
+        std::string object_uuid = uuidToHexString(obj.object_id);
+        // RCLCPP_INFO(node_->get_logger(), "received object_id: %s", object_uuid.c_str());
 
-        // xDistance, yDistance: Int (-132768..132767), 0.01 meter accuracy
-        object.xDistance = std::lround((
-          (object.position_x - ego_.mgrs_x) * cos(-ego_.heading) - (object.position_y - ego_.mgrs_y) * sin(-ego_.heading)
-          ) * 100.0);
-        object.yDistance = std::lround((
-          (object.position_x - ego_.mgrs_x) * sin(-ego_.heading) + (object.position_y - ego_.mgrs_y) * cos(-ego_.heading)
-          ) * 100.0);
-        if (object.xDistance < -132768 || object.xDistance > 132767) {
-          continue;
-        }
-        if (object.yDistance < -132768 || object.yDistance > 132767) {
-          continue;
-        }
-        object.xSpeed = 0;
-        object.ySpeed = 0;
+        // RCLCPP_INFO(node_->get_logger(), "ObjectsList count: %d", objectsList.size());
 
-        // Calculate orientation of detected object
-        tf2::Quaternion quat(object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
-        tf2::Matrix3x3 matrix(quat);
-        double roll, pitch, yaw;
-        matrix.getRPY(roll, pitch, yaw);
-        if (yaw < 0) {
-          object.yawAngle = std::lround(((yaw + 2*M_PI) * 180.0 / M_PI) * 10.0); // 0 - 3600
-        } else {
-          object.yawAngle = std::lround((yaw * 180.0 / M_PI) * 10.0); // 0 - 3600
+        if (existence_probability >= objectConfidenceThreshold_) {
+          // ObjectConfidence > ObjectConfidenceThreshold
+
+          // Object tracked in internal memory? (i.e. Is object included in ObjectsList?)
+          auto found_object = std::find_if(objectsList.begin(), objectsList.end(), [&](auto const &e) {
+            return !strcmp(e.uuid.c_str(), object_uuid.c_str());
+          });
+
+          if (found_object == objectsList.end()) {
+            // Object is new to internal memory
+
+            if (cpm_object_id_ > 255) {
+              cpm_object_id_ = 0;
+            }
+
+            // Add new object to ObjectsList
+            CpmApplication::Object object;
+            object.objectID = cpm_object_id_;
+            object.uuid = object_uuid;
+            object.timestamp_ros = msg->header.stamp;
+            object.position_x = obj.kinematics.initial_pose_with_covariance.pose.position.x;
+            object.position_y = obj.kinematics.initial_pose_with_covariance.pose.position.y;
+            object.position_z = obj.kinematics.initial_pose_with_covariance.pose.position.z;
+            object.orientation_x = obj.kinematics.initial_pose_with_covariance.pose.orientation.x;
+            object.orientation_y = obj.kinematics.initial_pose_with_covariance.pose.orientation.y;
+            object.orientation_z = obj.kinematics.initial_pose_with_covariance.pose.orientation.z;
+            object.orientation_w = obj.kinematics.initial_pose_with_covariance.pose.orientation.w;
+            object.shape_x = std::lround(obj.shape.dimensions.x * 10.0);
+            object.shape_y = std::lround(obj.shape.dimensions.y * 10.0);
+            object.shape_z = std::lround(obj.shape.dimensions.z * 10.0);
+
+            long long msg_timestamp_sec = msg->header.stamp.sec;
+            long long msg_timestamp_nsec = msg->header.stamp.nanosec;
+            msg_timestamp_sec -= 1072915200; // convert to etsi-epoch
+            long long msg_timestamp_msec = msg_timestamp_sec * 1000 + msg_timestamp_nsec / 1000000;
+            object.timeOfMeasurement = gdt_timestamp_ - msg_timestamp_msec;
+            if (object.timeOfMeasurement < -1500 || object.timeOfMeasurement > 1500) {
+              RCLCPP_INFO(node_->get_logger(), "[updateObjectsStack] timeOfMeasurement out of bounds: %d", object.timeOfMeasurement);
+              continue;
+            }
+
+            object.to_send = false;
+            object.to_send_trigger = 0;
+            object.timestamp = runtime_.now();
+
+            objectsList.push_back(object);
+            ++cpm_object_id_;
+
+          } else {
+            
+            // Object was already in internal memory
+
+            // Object belongs to class person or animal
+            if (obj.classification.front().label == autoware_auto_perception_msgs::msg::ObjectClassification::PEDESTRIAN || obj.classification.front().label == autoware_auto_perception_msgs::msg::ObjectClassification::UNKNOWN) {
+
+              if (include_all_persons_and_animals_) {
+                found_object->to_send = true;
+                found_object->to_send_trigger = 5;
+              }
+              
+              // Object has not been included in a CPM in the past 500 ms.
+              if (runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count() > 500000) {
+                // Include all objects of class person or animal in the current CPM
+                include_all_persons_and_animals_ = true;
+                found_object->to_send = true;
+                found_object->to_send_trigger = 5;
+                setAllObjectsOfPersonsAnimalsToSend(msg);
+                RCLCPP_INFO(node_->get_logger(), "Include all objects of person/animal class");
+              }
+
+            } else {
+              // Object does not belong to class person or animal
+
+              // Euclidean absolute distance has changed by more than 4m
+              double dist = pow(obj.kinematics.initial_pose_with_covariance.pose.position.x - found_object->position_x, 2) + pow(obj.kinematics.initial_pose_with_covariance.pose.position.y - found_object->position_y, 2);
+              dist = sqrt(dist);
+              // RCLCPP_INFO(node_->get_logger(), "Distance changed: %f", dist);
+              if (dist > 4) {
+                found_object->to_send = true;
+                found_object->to_send_trigger = 1;
+              } else {
+                
+              }
+
+              // Absolute speed changed by more than 0.5 m/s
+              double speed = pow(obj.kinematics.initial_twist_with_covariance.twist.linear.x - found_object->twist_linear_x, 2) + pow(obj.kinematics.initial_twist_with_covariance.twist.linear.x- found_object->twist_linear_y, 2);
+              speed = sqrt(speed);
+              // RCLCPP_INFO(node_->get_logger(), "Speed changed: %f", dist);
+              if (speed > 0.5) {
+                found_object->to_send = true;
+                found_object->to_send_trigger = 2;
+              } 
+
+              // Orientation of speed vector changed by more than 4 degrees
+              double twist_angular_x_diff = (obj.kinematics.initial_twist_with_covariance.twist.angular.x - found_object->twist_angular_x) * 180 / M_PI;
+              double twist_angular_y_diff = (obj.kinematics.initial_twist_with_covariance.twist.angular.y - found_object->twist_angular_y) * 180 / M_PI;
+              // RCLCPP_INFO(node_->get_logger(), "Orientation speed vector changed x: %f", twist_angular_x_diff);
+              // RCLCPP_INFO(node_->get_logger(), "Orientation speed vector changed y: %f", twist_angular_y_diff);
+              if( twist_angular_x_diff > 4 || twist_angular_y_diff > 4 ) {
+                found_object->to_send = true;
+                found_object->to_send_trigger = 3;
+              }
+
+
+              // It has been more than 1 s since last transmission of this object
+              if (runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count() > 1000000) {
+                found_object->to_send = true;
+                found_object->to_send_trigger = 4;
+                // RCLCPP_INFO(node_->get_logger(), "Been more than 1s: %ld", runtime_.now().time_since_epoch().count() - found_object->timestamp.time_since_epoch().count());
+              }
+
+            }
+
+            // Update found_object
+            found_object->timestamp_ros = msg->header.stamp;
+            found_object->position_x = obj.kinematics.initial_pose_with_covariance.pose.position.x;
+            found_object->position_y = obj.kinematics.initial_pose_with_covariance.pose.position.y;
+            found_object->position_z = obj.kinematics.initial_pose_with_covariance.pose.position.z;
+            found_object->orientation_x = obj.kinematics.initial_pose_with_covariance.pose.orientation.x;
+            found_object->orientation_y = obj.kinematics.initial_pose_with_covariance.pose.orientation.y;
+            found_object->orientation_z = obj.kinematics.initial_pose_with_covariance.pose.orientation.z;
+            found_object->orientation_w = obj.kinematics.initial_pose_with_covariance.pose.orientation.w;
+            found_object->shape_x = std::lround(obj.shape.dimensions.x * 10.0);
+            found_object->shape_y = std::lround(obj.shape.dimensions.y * 10.0);
+            found_object->shape_z = std::lround(obj.shape.dimensions.z * 10.0);
+
+            long long msg_timestamp_sec = msg->header.stamp.sec;
+            long long msg_timestamp_nsec = msg->header.stamp.nanosec;
+            msg_timestamp_sec -= 1072915200; // convert to etsi-epoch
+            long long msg_timestamp_msec = msg_timestamp_sec * 1000 + msg_timestamp_nsec / 1000000;
+            found_object->timeOfMeasurement = gdt_timestamp_ - msg_timestamp_msec;
+            if (found_object->timeOfMeasurement < -1500 || found_object->timeOfMeasurement > 1500) {
+              RCLCPP_INFO(node_->get_logger(), "[updateObjectsStack] timeOfMeasurement out of bounds: %d", found_object->timeOfMeasurement);
+              continue;
+            }
+
+            found_object->timestamp = runtime_.now();
+
+          }
         }
-        
-        long long msg_timestamp_sec = msg->header.stamp.sec;
-        long long msg_timestamp_nsec = msg->header.stamp.nanosec;
-        msg_timestamp_sec -= 1072915200; // convert to etsi-epoch
-        long long msg_timestamp_msec = msg_timestamp_sec * 1000 + msg_timestamp_nsec / 1000000;
-        // long long timestamp = msg->header.stamp.sec * 1e9 + msg->header.stamp.nanosec;
-        object.timeOfMeasurement = gdt_timestamp_ - msg_timestamp_msec;
-        // RCLCPP_INFO(node_->get_logger(), "[updateObjectsStack] %ld %ld %d", gdt_timestamp_, timestamp, object.timeOfMeasurement);
-        if (object.timeOfMeasurement < -1500 || object.timeOfMeasurement > 1500) {
-          RCLCPP_INFO(node_->get_logger(), "[updateObjectsStack] timeOfMeasurement out of bounds: %d", object.timeOfMeasurement);
-          continue;
-        }
-        objectsStack.push_back(object);
-        ++i;
       }
+    } else {
+      // No objects detected
     }
 
     // RCLCPP_INFO(node_->get_logger(), "ObjectsStack: %d objects", objectsStack.size());
     rclcpp::Time current_time = node_->now();
     // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] [measure] T_objstack_updated %ld", current_time.nanoseconds());
-    updating_objects_stack_ = false;
+    updating_objects_list_ = false;
+  }
+
+  void CpmApplication::printObjectsList(int cpm_num) {
+    // RCLCPP_INFO(node_->get_logger(), "------------------------");
+    if (objectsList.size() > 0) {
+      for (auto& object : objectsList) {
+        RCLCPP_INFO(node_->get_logger(), "[objectsList] %d,%d,%s,%d,%d", cpm_num, object.objectID, object.uuid.c_str(), object.to_send, object.to_send_trigger);
+      }
+    } else {
+      RCLCPP_INFO(node_->get_logger(), "[objectsList] %d,,,,", cpm_num);
+    }
+    
+    // RCLCPP_INFO(node_->get_logger(), "------------------------");
   }
 
   void CpmApplication::send() {
 
     if (is_sender_) {
+
       sending_ = true;
+
+      printObjectsList(cpm_num_);
       
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM...");
 
@@ -309,7 +443,7 @@ namespace v2x {
       management.stationType = StationType_passengerCar;
       management.referencePosition.latitude = ego_.latitude * 1e7;
       management.referencePosition.longitude = ego_.longitude * 1e7;
-      cpm.cpmParameters.numberOfPerceivedObjects = objectsStack.size();
+      cpm.cpmParameters.numberOfPerceivedObjects = objectsList.size();
 
       StationDataContainer_t *&sdc = cpm.cpmParameters.stationDataContainer;
       sdc = vanetza::asn1::allocate<StationDataContainer_t>();
@@ -325,45 +459,83 @@ namespace v2x {
       ovc.heading.headingValue = heading;
       ovc.heading.headingConfidence = 1;
 
-      if (objectsStack.size() > 0) {
+      if (objectsList.size() > 0) {
         PerceivedObjectContainer_t *&poc = cpm.cpmParameters.perceivedObjectContainer;
         poc = vanetza::asn1::allocate<PerceivedObjectContainer_t>();
 
-        for (CpmApplication::Object object : objectsStack) {
-          PerceivedObject *pObj = vanetza::asn1::allocate<PerceivedObject>();
-          pObj->objectID = object.objectID;
-          pObj->timeOfMeasurement = object.timeOfMeasurement;
-          pObj->xDistance.value = object.xDistance;
-          pObj->xDistance.confidence = 1;
-          pObj->yDistance.value = object.yDistance;
-          pObj->yDistance.confidence = 1;
-          pObj->xSpeed.value = object.xSpeed;
-          pObj->xSpeed.confidence = 1;
-          pObj->ySpeed.value = object.ySpeed;
-          pObj->ySpeed.confidence = 1;
+        for (auto& object : objectsList) {
 
-          pObj->planarObjectDimension1 = vanetza::asn1::allocate<ObjectDimension_t>();
-          pObj->planarObjectDimension2 = vanetza::asn1::allocate<ObjectDimension_t>();
-          pObj->verticalObjectDimension = vanetza::asn1::allocate<ObjectDimension_t>();
+          // RCLCPP_INFO(node_->get_logger(), "object.to_send: %d", object.to_send);
 
-          (*(pObj->planarObjectDimension1)).value = object.shape_y;
-          (*(pObj->planarObjectDimension1)).confidence = 1;
-          (*(pObj->planarObjectDimension2)).value = object.shape_x;
-          (*(pObj->planarObjectDimension2)).confidence = 1;
-          (*(pObj->verticalObjectDimension)).value = object.shape_z;
-          (*(pObj->verticalObjectDimension)).confidence = 1;
+          if (object.to_send) {
+            PerceivedObject *pObj = vanetza::asn1::allocate<PerceivedObject>();
 
-          pObj->yawAngle = vanetza::asn1::allocate<CartesianAngle>();
-          (*(pObj->yawAngle)).value = object.yawAngle;
-          (*(pObj->yawAngle)).confidence = 1;
+            // Update CPM-specific values for Object
+            object.xDistance = std::lround((
+              (object.position_x - ego_.mgrs_x) * cos(-ego_.heading) - (object.position_y - ego_.mgrs_y) * sin(-ego_.heading)
+              ) * 100.0);
+            object.yDistance = std::lround((
+              (object.position_x - ego_.mgrs_x) * sin(-ego_.heading) + (object.position_y - ego_.mgrs_y) * cos(-ego_.heading)
+              ) * 100.0);
+            if (object.xDistance < -132768 || object.xDistance > 132767) {
+              RCLCPP_WARN(node_->get_logger(), "xDistance out of bounds. objectID: #%d", object.objectID);
+              continue;
+            }
+            if (object.yDistance < -132768 || object.yDistance > 132767) {
+              RCLCPP_WARN(node_->get_logger(), "yDistance out of bounds. objectID: #%d", object.objectID);
+              continue;
+            }
 
-          // RCLCPP_INFO(node_->get_logger(), "[SEND] Added: #%d (%d, %d) (%d, %d) (%d, %d, %d) %d", object.objectID, object.xDistance, object.yDistance, object.xSpeed, object.ySpeed, object.shape_y, object.shape_x, object.shape_z, object.yawAngle);
+            // Calculate orientation of detected object
+            tf2::Quaternion quat(object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
+            tf2::Matrix3x3 matrix(quat);
+            double roll, pitch, yaw;
+            matrix.getRPY(roll, pitch, yaw);
+            if (yaw < 0) {
+              object.yawAngle = std::lround(((yaw + 2*M_PI) * 180.0 / M_PI) * 10.0); // 0 - 3600
+            } else {
+              object.yawAngle = std::lround((yaw * 180.0 / M_PI) * 10.0); // 0 - 3600
+            }
+            object.xSpeed = 0;
+            object.ySpeed = 0;
+            pObj->objectID = object.objectID;
+            pObj->timeOfMeasurement = object.timeOfMeasurement;
+            pObj->xDistance.value = object.xDistance;
+            pObj->xDistance.confidence = 1;
+            pObj->yDistance.value = object.yDistance;
+            pObj->yDistance.confidence = 1;
+            pObj->xSpeed.value = object.xSpeed;
+            pObj->xSpeed.confidence = 1;
+            pObj->ySpeed.value = object.ySpeed;
+            pObj->ySpeed.confidence = 1;
 
-          ASN_SEQUENCE_ADD(poc, pObj);
+            pObj->planarObjectDimension1 = vanetza::asn1::allocate<ObjectDimension_t>();
+            pObj->planarObjectDimension2 = vanetza::asn1::allocate<ObjectDimension_t>();
+            pObj->verticalObjectDimension = vanetza::asn1::allocate<ObjectDimension_t>();
+
+            (*(pObj->planarObjectDimension1)).value = object.shape_y;
+            (*(pObj->planarObjectDimension1)).confidence = 1;
+            (*(pObj->planarObjectDimension2)).value = object.shape_x;
+            (*(pObj->planarObjectDimension2)).confidence = 1;
+            (*(pObj->verticalObjectDimension)).value = object.shape_z;
+            (*(pObj->verticalObjectDimension)).confidence = 1;
+
+            pObj->yawAngle = vanetza::asn1::allocate<CartesianAngle>();
+            (*(pObj->yawAngle)).value = object.yawAngle;
+            (*(pObj->yawAngle)).confidence = 1;
+
+            ASN_SEQUENCE_ADD(poc, pObj);
+
+            object.to_send = false;
+            // RCLCPP_INFO(node_->get_logger(), "Sending object: %s", object.uuid.c_str());
+          } else {
+            // Object.to_send is set to False
+            // RCLCPP_INFO(node_->get_logger(), "Object: %s not being sent.", object.uuid.c_str());
+          }
         }
       } else {
         cpm.cpmParameters.perceivedObjectContainer = NULL;
-        RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Empty POC");
+        // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Empty POC");
       }
       
       Application::DownPacketPtr packet{new DownPacket()};
@@ -386,6 +558,7 @@ namespace v2x {
       rclcpp::Time current_time = node_->now();
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] [measure] T_depart_r1 %ld", current_time.nanoseconds());
 
+      ++cpm_num_;
     }
   }
 }
