@@ -169,6 +169,8 @@ namespace v2x {
         // RCLCPP_INFO(node_->get_logger(), "[INDICATE] Empty POC");
       }
 
+      insertCpmToCpmTable(message, (char*) "cpm_received");
+
       if (reflect_packet_) {
         Application::DownPacketPtr packet{new DownPacket()};
         std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
