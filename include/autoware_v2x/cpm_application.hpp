@@ -7,6 +7,7 @@
 #include <boost/asio/steady_timer.hpp>
 #include "autoware_auto_perception_msgs/msg/predicted_objects.hpp"
 #include "autoware_v2x/positioning.hpp"
+#include <vanetza/asn1/cpm.hpp>
 
 namespace v2x
 {
@@ -27,6 +28,18 @@ namespace v2x
         void updateHeading(double *);
         void printObjectsList(int);
         void send();
+
+        /** Creates the database schema.
+         *  Creates tables for cpm_sent, cpm_received
+        */
+        void createTables();
+
+        /** Inserts CPM into the database.
+         *  Constructs and executes queries for inserting the specified CPM data.
+         *  @param cpm The CPM to be inserted 
+         *  @param table_name The table to insert the CPM into (cpm_sent or cpm_received)
+        */
+        void insertCpmToCpmTable(vanetza::asn1::Cpm, char*);
 
         struct Object {
             std::string uuid;
