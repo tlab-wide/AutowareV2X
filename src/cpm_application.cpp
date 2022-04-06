@@ -138,7 +138,7 @@ namespace v2x {
 
       if (poc != NULL) {
         for (int i = 0; i < poc->list.count; ++i) {
-          RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
+          // RCLCPP_INFO(node_->get_logger(), "[INDICATE] Object: #%d", poc->list.array[i]->objectID);
 
           CpmApplication::Object object;
           double x1 = poc->list.array[i]->xDistance.value;
@@ -427,7 +427,7 @@ namespace v2x {
 
       sending_ = true;
 
-      printObjectsList(cpm_num_);
+      // printObjectsList(cpm_num_);
       
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM...");
 
@@ -623,7 +623,8 @@ namespace v2x {
       return;
     }
 
-    int64_t timestamp = duration_cast<milliseconds>(runtime_.now().time_since_epoch()).count();
+    int64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
     int perceivedObjectCount = 0;
     if (cpm->cpm.cpmParameters.numberOfPerceivedObjects) {
       perceivedObjectCount = cpm->cpm.cpmParameters.numberOfPerceivedObjects;
