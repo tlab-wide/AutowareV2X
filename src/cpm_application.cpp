@@ -238,12 +238,12 @@ namespace v2x {
   void CpmApplication::updateObjectsList(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
     updating_objects_list_ = true;
 
-    if (sending_) {
-      RCLCPP_INFO(node_->get_logger(), "updateObjectsStack Skipped...");
-      return;
-    } else {
-      // objectsList.clear();
-    }
+    // if (sending_) {
+    //   RCLCPP_INFO(node_->get_logger(), "updateObjectsStack Skipped...");
+    //   return;
+    // } else {
+    //   // objectsList.clear();
+    // }
 
     if (msg->objects.size() > 0) {
       for (autoware_auto_perception_msgs::msg::PredictedObject obj : msg->objects) {
@@ -550,6 +550,8 @@ namespace v2x {
         cpm.cpmParameters.perceivedObjectContainer = NULL;
         // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Empty POC");
       }
+
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM with %ld objects", objectsList.size());
 
       insertCpmToCpmTable(message, (char*) "cpm_sent");
       
