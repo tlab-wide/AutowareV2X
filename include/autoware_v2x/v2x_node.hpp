@@ -23,6 +23,7 @@ namespace v2x
     explicit V2XNode(const rclcpp::NodeOptions &node_options);
     V2XApp *app;
     void publishObjects(std::vector<CpmApplication::Object> *);
+    void publishCpmSenderObject(double, double, double);
 
   private:
     void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);
@@ -31,6 +32,7 @@ namespace v2x
     rclcpp::Subscription<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr subscription_;
     rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr subscription_pos_;
     rclcpp::Publisher<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr publisher_;
+    rclcpp::Publisher<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr publisher_v2x_cpm_sender_;
 
     double pos_lat_;
     double pos_lon_;

@@ -131,6 +131,11 @@ namespace v2x {
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] heading: %d", heading);
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] orientation: %f", orientation);
 
+
+      // Publish CPM Sender info to /v2x/cpm/sender through V2XNode function
+      node_->publishCpmSenderObject(x_mgrs, y_mgrs, orientation);
+
+
       // Get PerceivedObjects
       receivedObjectsStack.clear();
 
@@ -452,6 +457,7 @@ namespace v2x {
       StationDataContainer_t *&sdc = cpm.cpmParameters.stationDataContainer;
       sdc = vanetza::asn1::allocate<StationDataContainer_t>();
       sdc->present = StationDataContainer_PR_originatingVehicleContainer;
+
       OriginatingVehicleContainer_t &ovc = sdc->choice.originatingVehicleContainer;
       ovc.speed.speedValue = 0;
       ovc.speed.speedConfidence = 1;

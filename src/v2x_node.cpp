@@ -17,6 +17,8 @@
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "tf2/LinearMath/Quaternion.h"
+
 namespace gn = vanetza::geonet;
 
 using namespace vanetza;
@@ -32,6 +34,7 @@ namespace v2x
     subscription_pos_ = this->create_subscription<tf2_msgs::msg::TFMessage>("/tf", 10, std::bind(&V2XNode::tfCallback, this, _1));
 
     publisher_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/objects", rclcpp::QoS{10});
+    publisher_v2x_cpm_sender_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/sender", rclcpp::QoS{10});
 
     this->declare_parameter<std::string>("network_interface", "vmnet1");
     this->declare_parameter<bool>("is_sender", true);
@@ -43,6 +46,48 @@ namespace v2x
 
     rclcpp::Time current_time = this->now();
     RCLCPP_INFO(get_logger(), "[V2XNode::V2XNode] [measure] T_R1 %ld", current_time.nanoseconds());
+
+  }
+
+  void V2XNode::publishCpmSenderObject(double x_mgrs, double y_mgrs, double orientation) {
+    autoware_auto_perception_msgs::msg::PredictedObjects cpm_sender_object_msg;
+    std_msgs::msg::Header header;
+    rclcpp::Time current_time = this->now();
+    cpm_sender_object_msg.header.frame_id = "map";
+    cpm_sender_object_msg.header.stamp = current_time;
+
+    autoware_auto_perception_msgs::msg::PredictedObject object;
+    autoware_auto_perception_msgs::msg::ObjectClassification classification;
+    autoware_auto_perception_msgs::msg::Shape shape;
+    autoware_auto_perception_msgs::msg::PredictedObjectKinematics kinematics;
+
+    classification.label = autoware_auto_perception_msgs::msg::ObjectClassification::CAR;
+    classification.probability = 0.99;
+
+    shape.type = autoware_auto_perception_msgs::msg::Shape::BOUNDING_BOX;
+    shape.dimensions.x = 5.0;
+    shape.dimensions.y = 2.0;
+    shape.dimensions.z = 1.7;
+
+    kinematics.initial_pose_with_covariance.pose.position.x = x_mgrs;
+    kinematics.initial_pose_with_covariance.pose.position.y = y_mgrs;
+    kinematics.initial_pose_with_covariance.pose.position.z = 0.1;
+
+    tf2::Quaternion quat;
+    quat.setRPY(0, 0, orientation);
+
+    kinematics.initial_pose_with_covariance.pose.orientation.x = quat.x();
+    kinematics.initial_pose_with_covariance.pose.orientation.y = quat.y();
+    kinematics.initial_pose_with_covariance.pose.orientation.z = quat.z();
+    kinematics.initial_pose_with_covariance.pose.orientation.w = quat.w();
+
+    object.classification.emplace_back(classification);
+    object.shape = shape;
+    object.kinematics = kinematics;
+
+    cpm_sender_object_msg.objects.push_back(object);
+
+    publisher_v2x_cpm_sender_->publish(cpm_sender_object_msg);
 
   }
 
