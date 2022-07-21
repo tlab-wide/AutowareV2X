@@ -18,6 +18,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "tf2/LinearMath/Quaternion.h"
+#include <chrono>
+#include <iostream>
 
 namespace gn = vanetza::geonet;
 
@@ -44,8 +46,32 @@ namespace v2x
 
     RCLCPP_INFO(get_logger(), "V2X Node Launched");
 
-    rclcpp::Time current_time = this->now();
-    RCLCPP_INFO(get_logger(), "[V2XNode::V2XNode] [measure] T_R1 %ld", current_time.nanoseconds());
+    //rclcpp::Time current_time = this->now();
+    //RCLCPP_INFO(get_logger(), "[V2XNode::V2XNode] [measure] T_R1 %ld", current_time.nanoseconds());
+
+    time_t t = time(nullptr);
+    const tm* lt = localtime(&t);
+    std::stringstream s;
+    s<<"20";
+    s<<lt->tm_year-100; //100を引くことで20xxのxxの部分になる
+    s<<"-";
+    s<<lt->tm_mon+1; //月を0からカウントしているため
+    s<<"-";
+    s<<lt->tm_mday; //そのまま
+    s<<"_";
+    s<<lt->tm_hour;
+    s<<":";
+    s<<lt->tm_min;
+    s<<":";
+    s<<lt->tm_sec;
+    std::string timestamp = s.str();
+
+    char cur_dir[1024];
+    getcwd(cur_dir, 1024);
+    std::string latency_log_filename = std::string(cur_dir) + "/latency_logs/latency_log_file_" + timestamp + ".csv";
+    latency_log_file.open(latency_log_filename, std::ios::out);
+
+    // latency_log_file << "test hello" << std::endl;
 
   }
 
@@ -91,7 +117,7 @@ namespace v2x
 
   }
 
-  void V2XNode::publishObjects(std::vector<CpmApplication::Object> *objectsStack) {
+  void V2XNode::publishObjects(std::vector<CpmApplication::Object> *objectsStack, int cpm_num) {
     autoware_auto_perception_msgs::msg::PredictedObjects output_dynamic_object_msg;
     std_msgs::msg::Header header;
     rclcpp::Time current_time = this->now();
@@ -128,20 +154,28 @@ namespace v2x
       output_dynamic_object_msg.objects.push_back(object);
     }
 
-    current_time = this->now();
-    // RCLCPP_INFO(get_logger(), "[V2XNode::publishObjects] [measure] T_obj_r2 %ld", current_time.nanoseconds());
+    std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds> (
+      std::chrono::system_clock::now().time_since_epoch()
+    );
+    latency_log_file << "T_publish," << cpm_num << "," << ms.count() << std::endl;
 
     publisher_->publish(output_dynamic_object_msg);
   }
 
   void V2XNode::objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
-    rclcpp::Time current_time = this->now();
+    // rclcpp::Time current_time = this->now();
     rclcpp::Time msg_time = msg->header.stamp; // timestamp included in the Autoware Perception Msg.
     // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] %d objects", msg->objects.size());
 
     // Measuring T_A1R1
     // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj %ld", msg_time.nanoseconds());
-    // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj_receive %ld", current_time.nanoseconds());
+    // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_rosmsg %ld", current_time.nanoseconds());
+
+    std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds> (
+      std::chrono::system_clock::now().time_since_epoch()
+    );
+    latency_log_file << "T_rosmsg,," << ms.count() << std::endl;
+
     app->objectsCallback(msg);
   }
 

@@ -47,7 +47,8 @@ namespace v2x {
     include_all_persons_and_animals_(false),
     cpm_num_(0),
     received_cpm_num_(0),
-    cpm_object_id_(0)
+    cpm_object_id_(0),
+    use_dynamic_generation_rules_(true)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started. is_sender: %d", is_sender_);
     set_interval(milliseconds(100));
@@ -94,6 +95,12 @@ namespace v2x {
 
       asn1::Cpm message = *cpm;
       ItsPduHeader_t &header = message->header;
+
+       std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds> (
+        std::chrono::system_clock::now().time_since_epoch()
+      );
+      node_->latency_log_file << "T_received," << header.stationID << "," << ms.count() << std::endl;
+
 
       // Calculate GDT and get GDT from CPM and calculate the "Age of CPM"
       GenerationDeltaTime_t gdt_cpm = message->cpm.generationDeltaTime;
@@ -169,7 +176,7 @@ namespace v2x {
 
           receivedObjectsStack.push_back(object);
         }
-        node_->publishObjects(&receivedObjectsStack);
+        node_->publishObjects(&receivedObjectsStack, header.stationID);
       } else {
         // RCLCPP_INFO(node_->get_logger(), "[INDICATE] Empty POC");
       }
@@ -243,12 +250,13 @@ namespace v2x {
   void CpmApplication::updateObjectsList(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
     updating_objects_list_ = true;
 
-    // if (sending_) {
-    //   RCLCPP_INFO(node_->get_logger(), "updateObjectsStack Skipped...");
-    //   return;
-    // } else {
-    //   // objectsList.clear();
-    // }
+    // Flag all objects as NOT_SEND
+    if (objectsList.size() > 0) {
+      for (auto& object : objectsList) {
+        object.to_send = false;
+        object.to_send_trigger = -1;
+      }
+    }
 
     if (msg->objects.size() > 0) {
       for (autoware_auto_perception_msgs::msg::PredictedObject obj : msg->objects) {
@@ -303,7 +311,7 @@ namespace v2x {
               continue;
             }
 
-            object.to_send = false;
+            object.to_send = true;
             object.to_send_trigger = 0;
             object.timestamp = runtime_.now();
 
@@ -400,6 +408,12 @@ namespace v2x {
 
             found_object->timestamp = runtime_.now();
 
+            // if use_dymanic_generation_rules_ == false, then always include object in CPM
+            if (!use_dynamic_generation_rules_) {
+              found_object->to_send = true;
+              found_object->to_send_trigger = 0;
+            }
+
           }
         }
       }
@@ -432,7 +446,7 @@ namespace v2x {
 
       sending_ = true;
 
-      // printObjectsList(cpm_num_);
+      printObjectsList(cpm_num_);
       
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM...");
 
@@ -442,7 +456,7 @@ namespace v2x {
       ItsPduHeader_t &header = message->header;
       header.protocolVersion = 1;
       header.messageID = 14;
-      header.stationID = 1;
+      header.stationID = cpm_num_;
 
       CollectivePerceptionMessage_t &cpm = message->cpm;
 
@@ -539,7 +553,8 @@ namespace v2x {
 
             ASN_SEQUENCE_ADD(poc, pObj);
 
-            object.to_send = false;
+            // object.to_send = false;
+            // object.to_send_trigger = -1;
             // RCLCPP_INFO(node_->get_logger(), "Sending object: %s", object.uuid.c_str());
 
             ++perceivedObjectsCount;
@@ -550,18 +565,21 @@ namespace v2x {
           }
         }
 
-        cpm.cpmParameters.numberOfPerceivedObjects =perceivedObjectsCount;
+        cpm.cpmParameters.numberOfPerceivedObjects = perceivedObjectsCount;
+
+        if (perceivedObjectsCount == 0) {
+          cpm.cpmParameters.perceivedObjectContainer = NULL;
+        }
 
       } else {
         cpm.cpmParameters.perceivedObjectContainer = NULL;
-        // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Empty POC");
+        RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Empty POC");
       }
 
-      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM with %ld objects", objectsList.size());
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM with %d objects", perceivedObjectsCount);
 
       insertCpmToCpmTable(message, (char*) "cpm_sent");
       
-      Application::DownPacketPtr packet{new DownPacket()};
       std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
 
       payload->layer(OsiLayer::Application) = std::move(message);
@@ -578,8 +596,13 @@ namespace v2x {
       }
 
       sending_ = false;
-      rclcpp::Time current_time = node_->now();
+      // rclcpp::Time current_time = node_->now();
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] [measure] T_depart_r1 %ld", current_time.nanoseconds());
+
+      std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds> (
+        std::chrono::system_clock::now().time_since_epoch()
+      );
+      node_->latency_log_file << "T_depart," << cpm_num_ << "," << ms.count() << std::endl;
 
       ++cpm_num_;
     }
@@ -601,7 +624,7 @@ namespace v2x {
 
     ret = sqlite3_exec(db, sql_command, NULL, NULL, &err);
     if (ret != SQLITE_OK) {
-      RCLCPP_INFO(node_->get_logger(), "DB Execution Error");
+      RCLCPP_INFO(node_->get_logger(), "DB Execution Error (create table cpm_sent)");
       sqlite3_close(db);
       sqlite3_free(err);
       return;
@@ -611,7 +634,7 @@ namespace v2x {
 
     ret = sqlite3_exec(db, sql_command, NULL, NULL, &err);
     if (ret != SQLITE_OK) {
-      RCLCPP_INFO(node_->get_logger(), "DB Execution Error");
+      RCLCPP_INFO(node_->get_logger(), "DB Execution Error (create table cpm_received)");
       sqlite3_close(db);
       sqlite3_free(err);
       return;
@@ -644,7 +667,9 @@ namespace v2x {
 
     ret = sqlite3_exec(db, sql_command.str().c_str(), NULL, NULL, &err);
     if (ret != SQLITE_OK) {
-      RCLCPP_INFO(node_->get_logger(), "DB Execution Error");
+      RCLCPP_INFO(node_->get_logger(), "DB Execution Error (insertCpmToCpmTable)");
+      RCLCPP_INFO(node_->get_logger(), sql_command.str().c_str());
+      RCLCPP_INFO(node_->get_logger(), err);
       sqlite3_close(db);
       sqlite3_free(err);
       return;

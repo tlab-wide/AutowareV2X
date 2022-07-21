@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vanetza/access/data_request.hpp>
 #include <vanetza/net/ethernet_header.hpp>
+#include <chrono>
 
 using namespace vanetza;
 
@@ -33,7 +34,9 @@ std::size_t RawSocketLink::transmit(std::unique_ptr<ChunkPacket> packet)
   return socket_.send(const_buffers);
 }
 
-void RawSocketLink::indicate(IndicationCallback callback) { callback_ = callback; }
+void RawSocketLink::indicate(IndicationCallback callback) {
+  callback_ = callback;
+}
 
 void RawSocketLink::do_receive()
 {
