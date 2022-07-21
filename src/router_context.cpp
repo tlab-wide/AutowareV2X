@@ -17,6 +17,7 @@ RouterContext::RouterContext(const geonet::MIB &mib, TimeTrigger &trigger, vanet
   router_.set_address(mib_.itsGnLocalGnAddr);
   router_.set_transport_handler(geonet::UpperProtocol::BTP_B, &dispatcher_);
   router_.set_security_entity(security_entity);
+  mib_.vanetzaDisableBeaconing = true;
   update_position_vector();
 
   trigger_.schedule();
