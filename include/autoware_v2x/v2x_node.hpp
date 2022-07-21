@@ -14,6 +14,7 @@
 #include "autoware_v2x/positioning.hpp"
 #include "autoware_v2x/security.hpp"
 #include "autoware_v2x/router_context.hpp"
+#include <fstream>
 
 namespace v2x
 {
@@ -22,8 +23,10 @@ namespace v2x
   public:
     explicit V2XNode(const rclcpp::NodeOptions &node_options);
     V2XApp *app;
-    void publishObjects(std::vector<CpmApplication::Object> *);
+    void publishObjects(std::vector<CpmApplication::Object> *, int cpm_num);
     void publishCpmSenderObject(double, double, double);
+
+    std::ofstream latency_log_file;
 
   private:
     void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);
