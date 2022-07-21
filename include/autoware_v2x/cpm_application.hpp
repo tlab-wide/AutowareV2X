@@ -107,6 +107,8 @@ namespace v2x
         int received_cpm_num_;
 
         int cpm_object_id_;
+
+        bool use_dynamic_generation_rules_;
     };
 }
 
