@@ -20,6 +20,7 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include <chrono>
 #include <iostream>
+#include <random>
 
 namespace gn = vanetza::geonet;
 
@@ -150,6 +151,10 @@ namespace v2x
       object.classification.emplace_back(classification);
       object.shape = shape;
       object.kinematics = kinematics;
+
+      std::mt19937 gen(std::random_device{}());
+      std::independent_bits_engine<std::mt19937, 8, uint8_t> bit_eng(gen);
+      std::generate(object.object_id.uuid.begin(), object.object_id.uuid.end(), bit_eng);
 
       output_dynamic_object_msg.objects.push_back(object);
     }
