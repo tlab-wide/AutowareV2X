@@ -1,18 +1,9 @@
 # Tutorials
 
-Simulations can be an easy way of verifying the functionality of AutowareV2X before an actual field test.
-Here, since we want to test both the sending and receiving of information through AutowareV2X, we will need at least two AutowareV2X instances. For this, we will use a Docker-based environment.
+AutowareV2X can be first verified using [Autoware's Planning Simulator](https://autowarefoundation.github.io/autoware-documentation/main/tutorials/ad-hoc-simulation/planning-simulation/).
 
-## Using CPM in a simulation-based environment
+- [Running Autoware in the Planning Simulator](./planning-simulation/index.md)
 
-1. Create Docker networks
-```
-$ docker network create --driver=bridge --subnet=10.0.0.0/16 v2x_net -o com.docker.network.bridge.name="v2x_net"
-```
-# Launch Autoware container
-rocker --nvidia --x11 --user --volume $HOME/autoware_docker --volume $HOME/autoware_map -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
+Then, after you are familiar with how AutowareV2X works, you can use actual devices to test AutowareV2X.
 
-$ cd autoware_docker
-$ . install/setup.bash
-$ ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth1
-```
+- [Running AutowareV2X on Actual Devices](./actual-devices/index.md)

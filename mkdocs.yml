@@ -1,4 +1,4 @@
-site_name: AutowareV2X
+site_name: AutowareV2X Documentation
 theme:
   name: material
   features:
