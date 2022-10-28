@@ -6,4 +6,6 @@ It utilizes Vanetza as the protocol suite for ETSI C-ITS standards.
 
 We have also provided a working example of a CPM application, where Collective Perception Messages can be used to exchange perception information in Autoware.
 
+![AutowareV2X Architecture](./docs/architecture.png)
+
 See the [official documentation](https://tlab-wide.github.io/autoware_v2x/)
