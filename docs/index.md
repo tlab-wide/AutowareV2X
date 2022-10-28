@@ -8,6 +8,8 @@ It utilizes [Vanetza](https://github.com/riebl/vanetza) as the protocol suite fo
 
 We have also provided a working example of a CPM application, where Collective Perception Messages can be used to exchange perception information in Autoware.
 
+![AutowareV2X Architecture](./architecture.png)
+
 ## Getting started
 
 - [Installation](/installation) pages explain the installation steps of AutowareV2X and its prerequisites.

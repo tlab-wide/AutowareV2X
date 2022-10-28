@@ -1,3 +1,5 @@
 db/*.db
 doxygen/html/
 site/
+
+.DS_Store
