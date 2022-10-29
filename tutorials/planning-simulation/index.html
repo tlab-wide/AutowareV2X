@@ -747,8 +747,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#launch-two-autoware-containers" class="md-nav__link">
-    Launch two Autoware containers
+  <a href="#launch-two-its-s-containers" class="md-nav__link">
+    Launch two ITS-S containers
   </a>
   
 </li>
@@ -772,6 +772,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#show-cpm-shared-objects-in-rviz" class="md-nav__link">
+    Show CPM-shared objects in RViz
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -788,36 +795,80 @@
 
 
 <h1 id="running-autowarev2x-in-the-planning-simulator">Running AutowareV2X in the Planning Simulator<a class="headerlink" href="#running-autowarev2x-in-the-planning-simulator" title="Permanent link">#</a></h1>
-<p>Simulations can be an easy way of verifying the functionality of AutowareV2X before an actual field test.
-We will use <a href="https://autowarefoundation.github.io/autoware-documentation/main/tutorials/ad-hoc-simulation/planning-simulation/">Autoware's Planning Simulator</a> here and add connectivity to it with AutowareV2X.</p>
+<p>Simulations can be an easy way of verifying the functionality of AutowareV2X before an actual field test.</p>
+<p>AutowareV2X can be run in a simulation environment using <a href="https://autowarefoundation.github.io/autoware-documentation/main/tutorials/ad-hoc-simulation/planning-simulation/">Autoware's Planning Simulator</a>. An ITS-S is composed of Autoware as the autonomous driving stack and AutowareV2X as its V2X communication stack. Each ITS-S is executed inside a Docker container, and the wireless communication medium between ITS-Ss are modeled with Docker networks. A dynamic ITS-S is defined as a CAV, while a static ITS-S is considered a RSU. Perceived Objects are sent out on the network as CPMs.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Make sure you have completed <a href="https://autowarefoundation.github.io/autoware-documentation/main/tutorials/ad-hoc-simulation/planning-simulation/">Autoware's Planning Simulator Tutorial</a> before continuing.</p>
 </div>
-<p>Here, since we want to test both the sending and receiving of information through AutowareV2X, we will need at least two AutowareV2X instances. For this, we will use a Docker-based environment.</p>
+<p>In order to test both the sender and receiver functionalities, we will need at least two ITS-S instances.</p>
 <h2 id="the-docker-environment-to-create">The Docker environment to create<a class="headerlink" href="#the-docker-environment-to-create" title="Permanent link">#</a></h2>
-<p>We will be creating the Docker environment as depicted in the figure below. There will be two Docker containers, each of which includes Autoware.universe and AutowareV2X. They will both be a part of the Docker network called <code>v2x_net</code> with the subnet <code>10.0.0.0/24</code>.</p>
+<p>We will be creating the Docker environment as depicted in the figure below. There will be two Docker containers to represent the two ITS-Ss, each of which includes Autoware.universe and AutowareV2X. They will both be a part of the Docker network called <code>v2x_net</code> with the subnet <code>10.0.0.0/24</code>. "Autoware Container #1" and "Autoware Container #2" will be described as <code>autoware_1</code> and <code>autoware_2</code> respectively.</p>
 <p><img alt="Docker Environment" src="docker-env.png" /></p>
 <h3 id="create-a-docker-network-for-v2x-communication">Create a Docker network for V2X communication<a class="headerlink" href="#create-a-docker-network-for-v2x-communication" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code>docker network create --driver<span class="o">=</span>bridge --subnet<span class="o">=</span><span class="m">10</span>.0.0.0/24 v2x_net -o com.docker.network.bridge.name<span class="o">=</span><span class="s2">&quot;v2x_net&quot;</span>
 </code></pre></div>
-<h3 id="launch-two-autoware-containers">Launch two Autoware containers<a class="headerlink" href="#launch-two-autoware-containers" title="Permanent link">#</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># In one terminal, use rocker to launch container &quot;autoware_1&quot;</span>
-rocker --nvidia --x11 --user --volume <span class="nv">$HOME</span>/autoware_docker --volume <span class="nv">$HOME</span>/autoware_map --network<span class="o">=</span>v2x_net --ip <span class="m">10</span>.0.0.2 --name autoware_1 --hostname autoware_1 -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
-
-<span class="c1"># In another terminal, use rocker to launch container &quot;autoware_2&quot;</span>
-rocker --nvidia --x11 --user --volume <span class="nv">$HOME</span>/autoware_docker --volume <span class="nv">$HOME</span>/autoware_map --network<span class="o">=</span>v2x_net --ip <span class="m">10</span>.0.0.3 --name autoware_2 --hostname autoware_2 -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
-</code></pre></div>
+<h3 id="launch-two-its-s-containers">Launch two ITS-S containers<a class="headerlink" href="#launch-two-its-s-containers" title="Permanent link">#</a></h3>
+<p>In one terminal, use rocker to launch container <code>autoware_1</code>:
+<div class="highlight"><pre><span></span><code>rocker --nvidia --x11 --user --privileged --volume <span class="nv">$HOME</span>/workspace/autoware_docker --volume <span class="nv">$HOME</span>/data --network<span class="o">=</span>v2x_net --name autoware_1 --oyr-run-arg <span class="s2">&quot;--ip 10.0.0.2 --hostname autoware_1&quot;</span> -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
+</code></pre></div></p>
+<p>In another terminal, use rocker to launch container <code>autoware_2</code>:
+<div class="highlight"><pre><span></span><code>rocker --nvidia --x11 --user --privileged --volume $HOME/workspace/autoware_docker --volume $HOME/data --network=v2x_net --name autoware_2 --oyr-run-arg &quot;--ip 10.0.0.3 --hostname autoware_2&quot; -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
+</code></pre></div></p>
 <h2 id="run-planning-simulator">Run Planning Simulator<a class="headerlink" href="#run-planning-simulator" title="Permanent link">#</a></h2>
 <p>Run the Planning Simulator in both <code>autoware_1</code> and <code>autoware_2</code>.</p>
-<div class="highlight"><pre><span></span><code>source ~/autoware_docker/install/setup.bash
-ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/autoware_map/sample-map-planning vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
+<p>In <code>autoware_1</code>:</p>
+<div class="highlight"><pre><span></span><code>cd ~/workspace/autoware_docker
+source ~/autoware_docker/install/setup.bash
+export AWID=1 # autoware_1
+source ~/workspace/autoware_docker/src/v2x/autowarev2x/setup.sh
+ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/data/maps/sample-map-planning vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
+</code></pre></div>
+<p>Also, in <code>autoware_1</code>, set the ego-vehicle position by clicking <code>2D Pose Estimate</code>.</p>
+<p>Try adding some dummy cars by clicking <code>2D Dummy Car</code>.
+Note that you can make the dummy cars to be static by changing its <code>Velocity</code> to <code>0</code> in the <code>Tool Properties</code> pane.</p>
+<p><img alt="" src="tools-properties.png" /></p>
+<p>In <code>autoware_2</code>:</p>
+<div class="highlight"><pre><span></span><code>cd ~/workspace/autoware_docker
+source ~/autoware_docker/install/setup.bash
+export AWID=2 # autoware_2
+source ~/workspace/autoware_docker/src/v2x/autowarev2x/setup.sh
+ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/data/maps/sample-map-planning vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
 </code></pre></div>
 <h2 id="run-autowarev2x">Run AutowareV2X<a class="headerlink" href="#run-autowarev2x" title="Permanent link">#</a></h2>
-<p>In another terminal, connect to the <code>autoware_1</code> and <code>autoware_2</code> containers, and start AutowareV2X in both of them.</p>
-<div class="highlight"><pre><span></span><code>source ~/autoware_docker/install/setup.bash
-ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth1
-</code></pre></div>
+<p>In another terminal, connect to the <code>autoware_1</code> and <code>autoware_2</code> containers, and start AutowareV2X in both of them. We will set <code>autoware_1</code> to be the CPM sender, and <code>autoware_2</code> to be the CPM receiver.</p>
+<p>In <code>autoware_1</code>:
+<div class="highlight"><pre><span></span><code>docker exec -it autoware_1 bash
+sudo su
+cd ~/workspace/autoware_docker
+source ~/workspace/autoware_docker/install/setup.bash
+export AWID=1
+source ./src/v2x/autowarev2x/setup.sh
+ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0
+</code></pre></div></p>
+<p>You should see the command output like below.
+It shows that you are "Sending CPM with n objects", and the <code>[objectsList]</code> line describes the following information: <code>cpm_num, objectID, object.uuid, object.to_send, object.to_send_trigger</code>.
+<img alt="" src="autowarev2x_sender.png" /></p>
+<p>In <code>autoware_2</code>:
+<div class="highlight"><pre><span></span><code>docker exec -it autoware_2 bash
+sudo su
+cd ~/workspace/autoware_docker
+source ~/workspace/autoware_docker/install/setup.bash
+export AWID=2
+source ./src/v2x/autowarev2x/setup.sh
+ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0 is_sender:=false
+</code></pre></div></p>
+<p>When both the sender and receiver is launched, you should see that the receiver (<code>autoware_2</code>) will start receiving CPMs like below.</p>
+<p><img alt="" src="autowarev2x_receiver.png" /></p>
+<h2 id="show-cpm-shared-objects-in-rviz">Show CPM-shared objects in RViz<a class="headerlink" href="#show-cpm-shared-objects-in-rviz" title="Permanent link">#</a></h2>
+<ol>
+<li>Press "Add" from the Displays Panel
+<img alt="" src="add-v2x-rviz-1.png" /></li>
+<li>Choose "By topic", then select PredictedObjects from /v2x/cpm/objects
+<img alt="" src="add-v2x-rviz-2.png" /></li>
+<li>The CPM-shared objects are shown in Rviz!
+<img alt="" src="add-v2x-rviz-3.png" /></li>
+</ol>
 
 
 

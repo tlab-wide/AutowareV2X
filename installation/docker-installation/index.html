@@ -419,6 +419,26 @@
     Installing Autoware (Docker version)
   </a>
   
+    <nav class="md-nav" aria-label="Installing Autoware (Docker version)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    Setup
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#launch-container" class="md-nav__link">
+    Launch container
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -782,6 +802,26 @@
     Installing Autoware (Docker version)
   </a>
   
+    <nav class="md-nav" aria-label="Installing Autoware (Docker version)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    Setup
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#launch-container" class="md-nav__link">
+    Launch container
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -814,35 +854,40 @@
 </div>
 <h2 id="installing-autoware-docker-version">Installing Autoware (Docker version)<a class="headerlink" href="#installing-autoware-docker-version" title="Permanent link">#</a></h2>
 <p>For the newest documentation for the Docker installation of Autoware, see their <a href="https://autowarefoundation.github.io/autoware-documentation/main/installation/autoware/docker-installation/">official documentation</a>.</p>
-<p>In a nutshell, the following commands should work:</p>
-<div class="highlight"><pre><span></span><code>git clone https://github.com/autowarefoundation/autoware.git autoware_docker
+<h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code>mkdir -p ~/workspace <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ~/workspace
+git clone https://github.com/autowarefoundation/autoware.git autoware_docker
 <span class="nb">cd</span> autoware_docker
 
 <span class="c1"># Install dependencies using Ansible</span>
 ./setup-dev-env.sh docker
 
 <span class="c1"># Make directory to store maps</span>
-mkdir ~/autoware_map
+mkdir -p ~/data/maps
+</code></pre></div>
+<h3 id="launch-container">Launch container<a class="headerlink" href="#launch-container" title="Permanent link">#</a></h3>
+<div class="highlight"><pre><span></span><code># Launch Autoware container (with NVIDIA GPU)
+rocker --nvidia --x11 --user --volume $HOME/workspace/autoware_docker --volume $HOME/data -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
 
-<span class="c1"># Launch Autoware container (with NVIDIA GPU)</span>
-rocker --nvidia --x11 --user --volume <span class="nv">$HOME</span>/autoware_docker --volume <span class="nv">$HOME</span>/autoware_map -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
-
-<span class="c1"># Launch Autoware container (without NVIDIA GPU)</span>
-rocker -e <span class="nv">LIBGL_ALWAYS_SOFTWARE</span><span class="o">=</span><span class="m">1</span> --x11 --user --volume <span class="nv">$HOME</span>/autoware_docker --volume <span class="nv">$HOME</span>/autoware_map -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
+# Launch Autoware container (without NVIDIA GPU)
+rocker -e LIBGL_ALWAYS_SOFTWARE=1 --x11 --user --volume $HOME/workspace/autoware_docker --volume $HOME/data -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
 </code></pre></div>
 <h2 id="adding-autowarev2x">Adding AutowareV2X<a class="headerlink" href="#adding-autowarev2x" title="Permanent link">#</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>From here, run commands inside the container.</p>
+</div>
 <ol>
 <li>
 <p>Move into <code>autoware_docker</code> directory.
-<div class="highlight"><pre><span></span><code><span class="nb">cd</span> autoware_docker
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span> ~/workspace/autoware_docker
 </code></pre></div></p>
 </li>
 <li>
 <p>Edit the <code>autoware.repos</code> file and add the following two repositories to the end.
-<div class="highlight"><pre><span></span><code>v2x/autoware_v2x:
+<div class="highlight"><pre><span></span><code>v2x/autowarev2x:
   type: git
-  url: git@github.com:tlab-wide/autoware_v2x.git
+  url: git@github.com:tlab-wide/AutowareV2X.git
   version: main
 v2x/vanetza:
   type: git
@@ -861,7 +906,7 @@ vcs pull src
 <p>Install dependent ROS packages
 <div class="highlight"><pre><span></span><code>sudo apt update
 rosdep update
-rosdep install --from-paths . --ignore-src --rosdistro <span class="nv">$ROS_DISTRO</span>
+rosdep install --from-paths . --ignore-src --rosdistro <span class="nv">$ROS_DISTRO</span> -r
 </code></pre></div></p>
 </li>
 <li>
