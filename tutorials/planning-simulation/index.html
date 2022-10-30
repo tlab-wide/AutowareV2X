@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+      <meta name="generator" content="mkdocs-1.4.0, mkdocs-material-8.5.6">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7a952b86.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
@@ -477,12 +477,20 @@
             
           
         
+          
+        
+          
+        
       
       
         
         
         <div class="md-nav__link md-nav__link--index md-nav__link--active">
           <a href="./">Planning simulation</a>
+          
+            <label for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
           
         </div>
       
@@ -493,6 +501,34 @@
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
           
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="rosbag-and-analysis/" class="md-nav__link">
+        Recording Rosbag and Tcpdump for Analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="network-emulation/" class="md-nav__link">
+        Network Emulation
+      </a>
+    </li>
+  
+
             
           
         </ul>
@@ -779,6 +815,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#run-scenarios" class="md-nav__link">
+    Run scenarios
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -869,6 +912,31 @@ ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0 is_sender:=false
 <li>The CPM-shared objects are shown in Rviz!
 <img alt="" src="add-v2x-rviz-3.png" /></li>
 </ol>
+<h2 id="run-scenarios">Run scenarios<a class="headerlink" href="#run-scenarios" title="Permanent link">#</a></h2>
+<p>In order to run scenarios, the <a href="https://github.com/tier4/scenario_simulator_v2.git">scenario_simulator_v2</a> must be installed:</p>
+<ol>
+<li>Launch new Autoware container
+<div class="highlight"><pre><span></span><code>rocker --nvidia --x11 --user --volume $HOME/workspace/autoware_docker --volume $HOME/data -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
+</code></pre></div></li>
+<li>Add <code>simulator.repos</code>
+<div class="highlight"><pre><span></span><code>cd workspace/autoware_docker
+vcs import src &lt; simulator.repos
+</code></pre></div></li>
+<li>Install dependent ROS packages
+<div class="highlight"><pre><span></span><code>sudo apt update
+rosdep update
+rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -r
+</code></pre></div></li>
+<li>Rebuild workspace
+<div class="highlight"><pre><span></span><code>colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+</code></pre></div></li>
+<li>Download scenario.
+<div class="highlight"><pre><span></span><code>gdown -O ~/data/scenarios/ <span class="s1">&#39;https://drive.google.com/uc?id=1FXwSSWeFDTMz7qsG-J7pyJA6RgjksqCy&#39;</span>
+</code></pre></div></li>
+<li>Launch <code>scenario_test_runner</code> and specify scenario.
+<div class="highlight"><pre><span></span><code>ros2 launch scenario_test_runner scenario_test_runner.launch.py map_path:=$HOME/data/maps/sample-map-planning sensor_model:=sample_sensor_kit vehicle_model:=sample_vehicle scenario:=$HOME/data/scenarios/busy_kashiwa_scenario.yaml launch_autoware:=true
+</code></pre></div></li>
+</ol>
 
 
 
@@ -910,13 +978,13 @@ ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0 is_sender:=false
       
       
         
-        <a href="../actual-devices/" class="md-footer__link md-footer__link--next" aria-label="Next: Running AutowareV2X on Actual Devices" rel="next">
+        <a href="rosbag-and-analysis/" class="md-footer__link md-footer__link--next" aria-label="Next: Recording Rosbag and Tcpdump for Analysis" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Running AutowareV2X on Actual Devices
+              Recording Rosbag and Tcpdump for Analysis
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -950,7 +1018,7 @@ ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0 is_sender:=false
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top"], "search": "../../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e9125f.min.js"></script>
+      <script src="../../assets/javascripts/bundle.078830c0.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
       
