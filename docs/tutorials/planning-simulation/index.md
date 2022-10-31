@@ -102,7 +102,7 @@ When both the sender and receiver is launched, you should see that the receiver 
 
 ## Show CPM-shared objects in RViz
 
-1. Press "Add" from the Displays Panel
+1. Press "Add" from the Displays Panel <br>
 ![](./add-v2x-rviz-1.png)
 2. Choose "By topic", then select PredictedObjects from /v2x/cpm/objects
 ![](./add-v2x-rviz-2.png)
