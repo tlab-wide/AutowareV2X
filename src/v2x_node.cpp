@@ -32,48 +32,33 @@ namespace v2x
 {
   V2XNode::V2XNode(const rclcpp::NodeOptions &node_options) : rclcpp::Node("autoware_v2x_node", node_options) {
     using std::placeholders::_1;
-    subscription_ = this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>("/perception/object_recognition/objects", 10, std::bind(&V2XNode::objectsCallback, this, _1));
 
-    subscription_pos_ = this->create_subscription<tf2_msgs::msg::TFMessage>("/tf", 10, std::bind(&V2XNode::tfCallback, this, _1));
+    objects_sub_ = this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>("/perception/object_recognition/objects", 10, std::bind(&V2XNode::objectsCallback, this, _1));
+    tf_sub_ = this->create_subscription<tf2_msgs::msg::TFMessage>("/tf", 10, std::bind(&V2XNode::tfCallback, this, _1));
 
-    publisher_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/objects", rclcpp::QoS{10});
-    publisher_v2x_cpm_sender_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/sender", rclcpp::QoS{10});
+    cpm_objects_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/objects", rclcpp::QoS{10});
+    // cpm_sender_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/sender", rclcpp::QoS{10});
 
+    // Declare Parameters
     this->declare_parameter<std::string>("network_interface", "vmnet1");
     this->declare_parameter<bool>("is_sender", true);
 
+    // Launch V2XApp in a new thread
     app = new V2XApp(this);
     boost::thread v2xApp(boost::bind(&V2XApp::start, app));
 
     RCLCPP_INFO(get_logger(), "V2X Node Launched");
 
-    //rclcpp::Time current_time = this->now();
-    //RCLCPP_INFO(get_logger(), "[V2XNode::V2XNode] [measure] T_R1 %ld", current_time.nanoseconds());
-
+    // Make latency_log file from current timestamp
     time_t t = time(nullptr);
     const tm* lt = localtime(&t);
     std::stringstream s;
-    s<<"20";
-    s<<lt->tm_year-100; //100を引くことで20xxのxxの部分になる
-    s<<"-";
-    s<<lt->tm_mon+1; //月を0からカウントしているため
-    s<<"-";
-    s<<lt->tm_mday; //そのまま
-    s<<"_";
-    s<<lt->tm_hour;
-    s<<":";
-    s<<lt->tm_min;
-    s<<":";
-    s<<lt->tm_sec;
+    s << "20" << lt->tm_year-100 <<"-" << lt->tm_mon+1 << "-" << lt->tm_mday << "_" << lt->tm_hour << ":" << lt->tm_min << ":" << lt->tm_sec;
     std::string timestamp = s.str();
-
     char cur_dir[1024];
     getcwd(cur_dir, 1024);
     std::string latency_log_filename = std::string(cur_dir) + "/latency_logs/latency_log_file_" + timestamp + ".csv";
     latency_log_file.open(latency_log_filename, std::ios::out);
-
-    // latency_log_file << "test hello" << std::endl;
-
   }
 
   void V2XNode::publishCpmSenderObject(double x_mgrs, double y_mgrs, double orientation) {
@@ -168,13 +153,7 @@ namespace v2x
   }
 
   void V2XNode::objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
-    // rclcpp::Time current_time = this->now();
     rclcpp::Time msg_time = msg->header.stamp; // timestamp included in the Autoware Perception Msg.
-    // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] %d objects", msg->objects.size());
-
-    // Measuring T_A1R1
-    // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_obj %ld", msg_time.nanoseconds());
-    // RCLCPP_INFO(get_logger(), "[V2XNode::objectsCallback] [measure] T_rosmsg %ld", current_time.nanoseconds());
 
     std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds> (
       std::chrono::system_clock::now().time_since_epoch()
