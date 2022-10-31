@@ -9,7 +9,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.0, mkdocs-material-8.5.6">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
     
     
       
@@ -17,7 +17,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.20d9efc8.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.7a952b86.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
@@ -38,6 +38,8 @@
     
     
       <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -759,6 +761,62 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#v2xnode" class="md-nav__link">
+    V2XNode
+  </a>
+  
+    <nav class="md-nav" aria-label="V2XNode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input" class="md-nav__link">
+    Input
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    Output
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    Functions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v2xapp" class="md-nav__link">
+    V2XApp
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpm-facility" class="md-nav__link">
+    CPM Facility
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -779,8 +837,78 @@
 </div>
 <p>A V2X communication software stack called <a href="https://github.com/riebl/vanetza">Vanetza</a>  is integrated into the standalone autonomous driving software stack, <a href="https://github.com/autowarefoundation/autoware">Autoware</a>. The V2X stack and the autonomous driving stack can be decoupled, allowing other applications to utilize the V2X router as well. A high-level overview of the architecture is shown below. </p>
 <p><img alt="AutowareV2X Architecture" src="../architecture.png" /></p>
-<p>Autoware is responsible for the perception task, while Autoware_V2X manages the transmission and reception of messages over the V2X channel. Services that are necessary for the integration of Vanetza into Autoware were newly developed. </p>
+<p>Autoware is responsible for the perception task, while AutowareV2X manages the transmission and reception of messages over the V2X channel. Services that are necessary for the integration of Vanetza into Autoware were newly developed.</p>
 <p>The V2XApp is responsible for managing the various facilities such as DENM, CAM, CPM, while the V2XNode handles the conversion of information between the V2X messages and ROS2 messages.</p>
+<h2 id="v2xnode">V2XNode<a class="headerlink" href="#v2xnode" title="Permanent link">#</a></h2>
+<p>The V2XNode launches a ROS2 Node for AutowareV2X. Its main purpose is to act as the bridge interface between Autoware and AutowareV2X. Information that is to be utilized in V2X Applications are retreived from Autoware in the form of ROS2 topics. Similarily, information that is received by AutowareV2X through V2X communications is published as ROS2 topics in order to feed it back into Autoware. </p>
+<h3 id="input">Input<a class="headerlink" href="#input" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/perception/object_recognition/objects</code></td>
+<td><code>autoware_auto_perception_msgs::msg::PredictedObjects</code></td>
+<td>Perceived Objects by Autoware</td>
+</tr>
+<tr>
+<td><code>/tf</code></td>
+<td><code>tf2_msgs::msg::TFMessage</code></td>
+<td>Pose of Ego Vehicle</td>
+</tr>
+</tbody>
+</table>
+<h3 id="output">Output<a class="headerlink" href="#output" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/v2x/cpm/objects</code></td>
+<td><code>autoware_auto_perception_msgs::msg::PredictedObjects</code></td>
+<td>Objects received by CPMs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="functions">Functions<a class="headerlink" href="#functions" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg)</code></td>
+<td>Call <code>V2XApp::objectsCallback</code></td>
+</tr>
+<tr>
+<td><code>tfCallback</code></td>
+<td>Call <code>V2XApp::tfCallback</code></td>
+</tr>
+<tr>
+<td><code>publishObjects(std::vector&lt;CpmApplication::Object&gt; *objectsStack, int cpm_num)</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>publishCpmSenderObject</code></td>
+<td>Not used now</td>
+</tr>
+</tbody>
+</table>
+<h2 id="v2xapp">V2XApp<a class="headerlink" href="#v2xapp" title="Permanent link">#</a></h2>
+<h2 id="cpm-facility">CPM Facility<a class="headerlink" href="#cpm-facility" title="Permanent link">#</a></h2>
 
 
 
@@ -862,7 +990,7 @@
     <script id="__config" type="application/json">{"base": "..", "features": ["navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top"], "search": "../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.078830c0.min.js"></script>
+      <script src="../assets/javascripts/bundle.37e9125f.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
       
