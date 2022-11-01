@@ -8,4 +8,4 @@ We have also provided a working example of a CPM application, where Collective P
 
 ![AutowareV2X Architecture](./docs/architecture.png)
 
-See the [official documentation]()https://tlab-wide.github.io/AutowareV2X/
+See the [official documentation](https://tlab-wide.github.io/AutowareV2X/)
