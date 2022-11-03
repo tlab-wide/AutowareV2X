@@ -99,7 +99,7 @@ namespace v2x
 
     cpm_sender_object_msg.objects.push_back(object);
 
-    publisher_v2x_cpm_sender_->publish(cpm_sender_object_msg);
+    // publisher_v2x_cpm_sender_->publish(cpm_sender_object_msg);
 
   }
 
@@ -149,7 +149,7 @@ namespace v2x
     );
     latency_log_file << "T_publish," << cpm_num << "," << ms.count() << std::endl;
 
-    publisher_->publish(output_dynamic_object_msg);
+    cpm_objects_pub_->publish(output_dynamic_object_msg);
   }
 
   void V2XNode::objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
