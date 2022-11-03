@@ -12,7 +12,7 @@ We have also provided a working example of a CPM application, where Collective P
 
 ## Getting started
 
-- [Installation](/installation) pages explain the installation steps of AutowareV2X and its prerequisites.
-- [Tutorials](/tutorials) pages provide several tutorials to follow after installation.
-- [Design](/design) pages explain the design concept and architecture of AutowareV2X.
-- [Support](/support) pages are the place to go if you need additional help.
+- [Installation](./installation/index.md) pages explain the installation steps of AutowareV2X and its prerequisites.
+- [Tutorials](./tutorials/index.md) pages provide several tutorials to follow after installation.
+- [Design](./design/index.md) pages explain the design concept and architecture of AutowareV2X.
+- [Support](./support/index.md) pages are the place to go if you need additional help.
