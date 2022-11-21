@@ -11,7 +11,6 @@
 #include <vanetza/btp/ports.hpp>
 #include <vanetza/asn1/cpm.hpp>
 #include <vanetza/asn1/packet_visitor.hpp>
-#include <vanetza/facilities/cpm_functions.hpp>
 #include <chrono>
 #include <functional>
 #include <iostream>
@@ -30,7 +29,6 @@
 #include <math.h>
 
 using namespace vanetza;
-using namespace vanetza::facilities;
 using namespace std::chrono;
 
 namespace v2x {
@@ -612,7 +610,7 @@ namespace v2x {
     sqlite3 *db = NULL;
     char* err = NULL;
 
-    int ret = sqlite3_open("./src/autoware_v2x/db/autoware_v2x.db", &db);
+    int ret = sqlite3_open("autoware_v2x.db", &db);
     if (ret != SQLITE_OK) {
       RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
       return;
@@ -648,7 +646,7 @@ namespace v2x {
     sqlite3 *db = NULL;
     char* err = NULL;
 
-    int ret = sqlite3_open("./src/autoware_v2x/db/autoware_v2x.db", &db);
+    int ret = sqlite3_open("autoware_v2x.db", &db);
     if (ret != SQLITE_OK) {
       RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
       return;

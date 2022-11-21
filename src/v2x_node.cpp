@@ -11,7 +11,6 @@
 #include "std_msgs/msg/string.hpp"
 
 #include <vanetza/asn1/cpm.hpp>
-#include <vanetza/facilities/cpm_functions.hpp>
 #include <sstream>
 #include <memory>
 #include <boost/thread.hpp>
@@ -25,7 +24,6 @@
 namespace gn = vanetza::geonet;
 
 using namespace vanetza;
-using namespace vanetza::facilities;
 using namespace std::chrono;
 
 namespace v2x
