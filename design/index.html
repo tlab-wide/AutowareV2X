@@ -836,7 +836,7 @@
 <p>More to come</p>
 </div>
 <p>A V2X communication software stack called <a href="https://github.com/riebl/vanetza">Vanetza</a>  is integrated into the standalone autonomous driving software stack, <a href="https://github.com/autowarefoundation/autoware">Autoware</a>. The V2X stack and the autonomous driving stack can be decoupled, allowing other applications to utilize the V2X router as well. A high-level overview of the architecture is shown below. </p>
-<p><img alt="AutowareV2X Architecture" src="../architecture.png" /></p>
+<p><img alt="AutowareV2X Architecture diagram" src="../figs/autowarev2x_architecture_v2.png" /></p>
 <p>Autoware is responsible for the perception task, while AutowareV2X manages the transmission and reception of messages over the V2X channel. Services that are necessary for the integration of Vanetza into Autoware were newly developed.</p>
 <p>The V2XApp is responsible for managing the various facilities such as DENM, CAM, CPM, while the V2XNode handles the conversion of information between the V2X messages and ROS2 messages.</p>
 <h2 id="v2xnode">V2XNode<a class="headerlink" href="#v2xnode" title="Permanent link">#</a></h2>
