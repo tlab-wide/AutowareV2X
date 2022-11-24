@@ -54,10 +54,10 @@ namespace v2x
     double y = msg->transforms[0].transform.translation.y;
     double z = msg->transforms[0].transform.translation.z;
 
-    long long timestamp_sec = msg->transforms[0].header.stamp.sec; // seconds
-    long long timestamp_nsec = msg->transforms[0].header.stamp.nanosec; // nanoseconds
+    long timestamp_sec = msg->transforms[0].header.stamp.sec; // seconds
+    long timestamp_nsec = msg->transforms[0].header.stamp.nanosec; // nanoseconds
     timestamp_sec -= 1072915200; // convert to etsi-epoch
-    long long timestamp_msec = timestamp_sec * 1000 + timestamp_nsec / 1000000;
+    long timestamp_msec = timestamp_sec * 1000 + timestamp_nsec / 1000000;
     int gdt = timestamp_msec % 65536;
 
     double rot_x = msg->transforms[0].transform.rotation.x;
@@ -92,7 +92,7 @@ namespace v2x
       cp->updateMGRS(&x, &y);
       cp->updateRP(&lat, &lon, &z);
       cp->updateHeading(&yaw);
-      cp->updateGenerationDeltaTime(&gdt, &timestamp_msec);
+      cp->updateGenerationTime(&gdt, &timestamp_msec);
     }
   }
 

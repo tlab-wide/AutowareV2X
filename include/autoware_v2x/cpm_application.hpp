@@ -24,7 +24,7 @@ namespace v2x
         void updateObjectsList(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
         void updateMGRS(double *, double *);
         void updateRP(double *, double *, double *);
-        void updateGenerationDeltaTime(int *, long long *);
+        void updateGenerationTime(int *, long *);
         void updateHeading(double *);
         void printObjectsList(int);
         void send();
@@ -92,8 +92,8 @@ namespace v2x
 
         Ego_station ego_;
         
-        int generationDeltaTime_;
-        long long gdt_timestamp_;
+        int generationTime_;
+        long gdt_timestamp_;
 
         double objectConfidenceThreshold_;
 
