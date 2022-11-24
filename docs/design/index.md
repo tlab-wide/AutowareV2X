@@ -5,7 +5,7 @@
 
 A V2X communication software stack called [Vanetza](https://github.com/riebl/vanetza)  is integrated into the standalone autonomous driving software stack, [Autoware](https://github.com/autowarefoundation/autoware). The V2X stack and the autonomous driving stack can be decoupled, allowing other applications to utilize the V2X router as well. A high-level overview of the architecture is shown below. 
 
-![AutowareV2X Architecture](../architecture.png)
+![AutowareV2X Architecture diagram](../figs/autowarev2x_architecture_v2.png)
 
 Autoware is responsible for the perception task, while AutowareV2X manages the transmission and reception of messages over the V2X channel. Services that are necessary for the integration of Vanetza into Autoware were newly developed.
 
