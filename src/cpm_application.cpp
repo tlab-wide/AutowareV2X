@@ -36,7 +36,7 @@ namespace v2x {
     node_(node),
     runtime_(rt),
     ego_(),
-    generationDeltaTime_(0),
+    generationTime_(0),
     updating_objects_list_(false),
     sending_(false),
     is_sender_(is_sender),
@@ -101,10 +101,10 @@ namespace v2x {
 
 
       // Calculate GDT and get GDT from CPM and calculate the "Age of CPM"
-      GenerationDeltaTime_t gdt_cpm = message->cpm.generationDeltaTime;
-      const auto time_now = duration_cast<milliseconds> (runtime_.now().time_since_epoch());
-      uint16_t gdt = time_now.count();
-      int gdt_diff = (65536 + (gdt - gdt_cpm) % 65536) % 65536;
+      TimestampIts_t gt_cpm = message->cpm.generationTime;
+      // const auto time_now = duration_cast<milliseconds> (runtime_.now().time_since_epoch());
+      // uint16_t gdt = time_now.count();
+      // int gdt_diff = (65536 + (gdt - gdt_cpm) % 65536) % 65536;
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT_CPM: %ld", gdt_cpm);
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT: %u", gdt);
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_R1R2: %d", gdt_diff);
@@ -218,8 +218,8 @@ namespace v2x {
     ego_.altitude = *altitude;
   }
 
-  void CpmApplication::updateGenerationDeltaTime(int *gdt, long long *gdt_timestamp) {
-    generationDeltaTime_ = *gdt;
+  void CpmApplication::updateGenerationTime(int *gdt, long *gdt_timestamp) {
+    generationTime_ = *gdt;
     gdt_timestamp_ = *gdt_timestamp; // ETSI-epoch milliseconds timestamp
   }
 
@@ -458,8 +458,9 @@ namespace v2x {
 
       CollectivePerceptionMessage_t &cpm = message->cpm;
 
-      // Set GenerationDeltaTime
-      cpm.generationDeltaTime = generationDeltaTime_ * GenerationDeltaTime_oneMilliSec;
+      // Set GenerationTime
+      RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] %ld", gdt_timestamp_);
+      asn_long2INTEGER(&cpm.generationTime, (long) gdt_timestamp_);
 
       CpmManagementContainer_t &management = cpm.cpmParameters.managementContainer;
       management.stationType = StationType_passengerCar;
