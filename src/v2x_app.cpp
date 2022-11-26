@@ -113,6 +113,7 @@ namespace v2x
     sout << mac_address;
     RCLCPP_INFO(node_->get_logger(), "MAC Address: '%s'", sout.str().c_str());
 
+    // Geonetworking Management Infirmation Base (MIB) defines the GN protocol constants.
     gn::MIB mib;
     mib.itsGnLocalGnAddr.mid(mac_address);
     mib.itsGnLocalGnAddr.is_manually_configured(true);
@@ -120,6 +121,7 @@ namespace v2x
     mib.itsGnSecurity = false;
     mib.itsGnProtocolVersion = 1;
 
+    // Create raw socket on device and LinkLayer object
     auto link_layer =  create_link_layer(io_service, device, "ethernet");
     auto positioning = create_position_provider(io_service, trigger.runtime());
     auto security = create_security_entity(trigger.runtime(), *positioning);
