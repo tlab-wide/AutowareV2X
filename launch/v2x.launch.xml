@@ -2,7 +2,6 @@
   <arg name="network_interface" default="wlp5s0"/>
   <arg name="is_sender" default="true"/>
   <node pkg="autoware_v2x" exec="autoware_v2x_node" namespace="v2x" output="screen">
-    <param name="network_interface" value="$(var network_interface)"/>
-    <param name="is_sender" value="$(var is_sender)"/>
+    <param from="$(find-pkg-share autoware_v2x)/config/autoware_v2x.param.yaml"/>
   </node>
 </launch>

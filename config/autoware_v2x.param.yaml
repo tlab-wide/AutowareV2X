@@ -1,0 +1,4 @@
+/**:
+  ros__parameters:
+    network_interface: "wlp4s0"
+    is_sender: true
