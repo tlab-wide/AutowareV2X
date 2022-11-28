@@ -117,6 +117,12 @@ namespace v2x {
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT: %u", gdt);
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_R1R2: %d", gdt_diff);
 
+      vanetza::asn1::Cpm cpm_lte = node_->cpm_received_lte_;
+      long gt_cpm_lte;
+
+      asn_INTEGER2long(&cpm_lte->cpm.generationTime, &gt_cpm_lte);
+      RCLCPP_INFO(node_->get_logger(), "[INDICATE] LTE CPM: %d %ld", cpm_lte->header.stationID, gt_cpm_lte);
+
 
       CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;
       double lat = management.referencePosition.latitude / 1.0e7;

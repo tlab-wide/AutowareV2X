@@ -34,6 +34,7 @@ namespace v2x
     std::ofstream latency_log_file;
 
     vanetza::asn1::Cpm cpm_;
+    vanetza::asn1::Cpm cpm_received_lte_;
 
   private:
     void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);

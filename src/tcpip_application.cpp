@@ -87,6 +87,9 @@ namespace v2x {
       const char* data = boost::asio::buffer_cast<const char*>(receive_buff_.data());
       std::cout << data << std::endl;
 
+      // vanetza::ByteBuffer bbuffer{receive_buff_.data()};
+      node_->cpm_received_lte_.decode(receive_buff_.data().data(), receive_buff_.data().size());
+
       receive_buff_.consume(receive_buff_.size());
     }
 
