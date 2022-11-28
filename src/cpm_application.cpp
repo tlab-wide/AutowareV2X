@@ -457,6 +457,7 @@ namespace v2x {
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM...");
 
       vanetza::asn1::Cpm message;
+      // vanetza::asn1::Cpm message = node_->cpm_;
 
       // ITS PDU Header
       ItsPduHeader_t &header = message->header;
@@ -589,6 +590,10 @@ namespace v2x {
       
       std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
 
+      vanetza::asn1::Cpm message_tmp;
+      message_tmp = message;
+      // memcpy(&message_tmp, &message, message.size());
+
       payload->layer(OsiLayer::Application) = std::move(message);
 
       Application::DataRequest request;
@@ -605,6 +610,9 @@ namespace v2x {
 
       // sendViaLTE();
       // std::thread lte_cpm = std::thread([&]() { sendViaLTE(); });
+
+      node_->cpm_ = std::move(message_tmp);
+      // memcpy(node_->cpm_, message, message.size());
 
 
       sending_ = false;

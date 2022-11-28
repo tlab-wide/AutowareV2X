@@ -17,6 +17,8 @@
 #include "autoware_v2x/router_context.hpp"
 #include <fstream>
 
+#include <vanetza/asn1/cpm.hpp>
+
 namespace v2x
 {
   class V2XNode : public rclcpp::Node
@@ -30,6 +32,8 @@ namespace v2x
     TcpIpApplication *tcpip_app;
     
     std::ofstream latency_log_file;
+
+    vanetza::asn1::Cpm cpm_;
 
   private:
     void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);
