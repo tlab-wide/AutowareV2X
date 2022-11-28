@@ -22,6 +22,8 @@
 
 #include <boost/units/cmath.hpp>
 #include <boost/units/systems/si/prefixes.hpp>
+#include <boost/thread.hpp>
+#include <boost/asio.hpp>
 
 #include <sqlite3.h>
 
@@ -51,6 +53,12 @@ namespace v2x {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started. is_sender: %d", is_sender_);
     set_interval(milliseconds(100));
     createTables();
+
+    // auto lte_cpm = new CpmApplication(node_, runtime_, is_sender_);
+    // boost::thread lteCpm(boost::bind(&CpmApplication::sendViaLTE, lte_cpm));
+
+    // lte_thread_ = std::thread([&]() { context_.run(); });
+
   }
 
   void CpmApplication::set_interval(Clock::duration interval) {
@@ -594,9 +602,12 @@ namespace v2x {
         throw std::runtime_error("[CpmApplication::send] CPM application data request failed");
       }
 
+
+      // sendViaLTE();
+      // std::thread lte_cpm = std::thread([&]() { sendViaLTE(); });
+
+
       sending_ = false;
-      // rclcpp::Time current_time = node_->now();
-      // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] [measure] T_depart_r1 %ld", current_time.nanoseconds());
 
       std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds> (
         std::chrono::system_clock::now().time_since_epoch()
@@ -604,6 +615,8 @@ namespace v2x {
       node_->latency_log_file << "T_depart," << cpm_num_ << "," << ms.count() << std::endl;
 
       ++cpm_num_;
+
+      // if (lte_cpm.joinable()) lte_cpm.join();
     }
   }
 

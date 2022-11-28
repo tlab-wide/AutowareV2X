@@ -43,6 +43,7 @@ ament_auto_add_library(autoware_v2x SHARED
   src/time_trigger.cpp
   src/positioning.cpp
   src/security.cpp
+  src/tcpip_application.cpp
 )
 
 target_link_libraries(autoware_v2x Vanetza::vanetza ${GeographicLib_LIBRARIES} Boost::thread sqlite3)

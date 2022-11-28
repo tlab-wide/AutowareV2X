@@ -8,6 +8,7 @@
 #include <boost/asio/io_service.hpp>
 #include "autoware_v2x/v2x_app.hpp"
 #include "autoware_v2x/cpm_application.hpp"
+#include "autoware_v2x/tcpip_application.hpp"
 #include "autoware_v2x/time_trigger.hpp"
 #include "autoware_v2x/link_layer.hpp"
 #include "autoware_v2x/ethernet_device.hpp"
@@ -25,6 +26,8 @@ namespace v2x
     V2XApp *app;
     void publishObjects(std::vector<CpmApplication::Object> *, int cpm_num);
     void publishCpmSenderObject(double, double, double);
+
+    TcpIpApplication *tcpip_app;
     
     std::ofstream latency_log_file;
 
@@ -39,6 +42,8 @@ namespace v2x
 
     double pos_lat_;
     double pos_lon_;
+
+    bool is_sender_;
   };
 }
 

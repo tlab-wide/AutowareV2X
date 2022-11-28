@@ -6,6 +6,7 @@
 #include "autoware_v2x/security.hpp"
 #include "autoware_v2x/link_layer.hpp"
 #include "autoware_v2x/cpm_application.hpp"
+#include "autoware_v2x/tcpip_application.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -41,9 +42,22 @@ namespace v2x
     this->declare_parameter<std::string>("network_interface", "vmnet1");
     this->declare_parameter<bool>("is_sender", true);
 
+    this->get_parameter("is_sender", is_sender_);
+
     // Launch V2XApp in a new thread
     app = new V2XApp(this);
     boost::thread v2xApp(boost::bind(&V2XApp::start, app));
+
+    if (is_sender_) {
+      // Launch TCPIP App in a new thread
+      tcpip_app = new TcpIpApplication(this);
+      boost::thread tcpipApp(boost::bind(&TcpIpApplication::start, tcpip_app));
+    } else {
+      // Launch TCPIP App in a new thread
+      tcpip_app = new TcpIpApplication(this);
+      boost::thread tcpipApp(boost::bind(&TcpIpApplication::startReceiver, tcpip_app));
+    }
+  
 
     RCLCPP_INFO(get_logger(), "V2X Node Launched");
 

@@ -3,6 +3,7 @@
 
 #include "autoware_v2x/application.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include "autoware_auto_perception_msgs/msg/predicted_objects.hpp"
@@ -28,6 +29,9 @@ namespace v2x
         void updateHeading(double *);
         void printObjectsList(int);
         void send();
+        void sendViaLTE();
+        void writeToLTE();
+        void on_connect(const boost::system::error_code& error);
 
         /** Creates the database schema.
          *  Creates tables for cpm_sent, cpm_received
