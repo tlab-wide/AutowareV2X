@@ -136,10 +136,15 @@ namespace v2x {
   }
 
   void TcpIpApplication::writeToLTE(boost::asio::ip::tcp::socket *socket) {
-    std::string data = "Hello world";
+    // std::string data = "Hello world";
+    std::cout << "writeToLTE" << std::endl;
+    // vanetza::ByteBuffer data;
+    // std::cout << "writeToLTE: " << data.size() << std::endl;
+    // memcpy(data, *(node_->cpm_)->encode(), (*(node_->cpm_)->encode()).size());
     boost::asio::async_write(
       *socket, 
-      boost::asio::buffer(&data[0], data.size()), 
+      // boost::asio::buffer(&data[0], data.size()), 
+      boost::asio::buffer(node_->cpm_.encode(), (node_->cpm_.encode()).size()), 
       boost::bind(&TcpIpApplication::onSendToLTE, this,
                   boost::asio::placeholders::error,
                   boost::asio::placeholders::bytes_transferred,
