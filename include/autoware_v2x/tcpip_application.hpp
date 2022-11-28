@@ -24,7 +24,7 @@ namespace v2x {
       void acceptViaLTE(boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor);
       void on_accept(const boost::system::error_code& error, boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor);
       void start_receive(boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor);
-      void on_receive(const boost::system::error_code& error, size_t bytes_transferred);
+      void on_receive(const boost::system::error_code& error, size_t bytes_transferred, boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor);
 
     private:
       V2XNode *node_;

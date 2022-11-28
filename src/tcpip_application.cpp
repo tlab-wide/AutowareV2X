@@ -73,10 +73,13 @@ namespace v2x {
       boost::asio::transfer_all(),
       boost::bind(&TcpIpApplication::on_receive, this,
                   boost::asio::placeholders::error, 
-                  boost::asio::placeholders::bytes_transferred));
+                  boost::asio::placeholders::bytes_transferred,
+                  socket,
+                  acceptor));
   }
 
-  void TcpIpApplication::on_receive(const boost::system::error_code& error, size_t bytes_transferred) {
+  void TcpIpApplication::on_receive(const boost::system::error_code& error, size_t bytes_transferred,
+    boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor) {
     if (error && error != boost::asio::error::eof) {
       std::cout << "receive failed: " << error.message() << std::endl;
     }
@@ -86,6 +89,17 @@ namespace v2x {
 
       receive_buff_.consume(receive_buff_.size());
     }
+
+    socket->close();
+
+    acceptor->async_accept(
+      *socket,
+      boost::bind(&TcpIpApplication::on_accept, 
+                  this,
+                  boost::asio::placeholders::error,
+                  socket,
+                  acceptor));
+
   }
 
   void TcpIpApplication::sendViaLTE(boost::asio::ip::tcp::socket *socket, boost::asio::steady_timer *t) {
