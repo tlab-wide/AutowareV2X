@@ -20,7 +20,7 @@ namespace v2x {
 
     boost::asio::ip::tcp::socket socket(io_service);
 
-    boost::asio::steady_timer t(io_service, boost::asio::chrono::seconds(1));
+    boost::asio::steady_timer t(io_service, boost::asio::chrono::milliseconds(500));
 
     t.async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, &socket, &t));
 
@@ -136,7 +136,7 @@ namespace v2x {
 
     // if (thrContext.joinable()) thrContext.join();
 
-    t->expires_at(t->expiry() + boost::asio::chrono::seconds(1));
+    t->expires_at(t->expiry() + boost::asio::chrono::milliseconds(500));
     t->async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, socket, t));
 
   }
