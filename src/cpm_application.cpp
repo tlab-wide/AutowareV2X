@@ -88,13 +88,21 @@ namespace v2x {
     return ss.str();
   }
 
+  void CpmApplication::indicateLTE() {
+    vanetza::asn1::Cpm cpm_lte = node_->cpm_received_lte_;
+    asn_INTEGER2long(&cpm_lte->cpm.generationTime, &most_recent_generation_time_cpm_lte_);
+
+    if (most_recent_generation_time_cpm_lte_ > most_recent_generation_time_cpm_) {
+      RCLCPP_INFO(node_->get_logger(), "[INDICATELTE] gt_cpm_lte: %ld, gt_cpm: %ld (%ld)", most_recent_generation_time_cpm_lte_, most_recent_generation_time_cpm_, most_recent_generation_time_cpm_-most_recent_generation_time_cpm_lte_);
+    }
+  }
+
   void CpmApplication::indicate(const DataIndication &indication, UpPacketPtr packet) {
 
     asn1::PacketVisitor<asn1::Cpm> visitor;
     std::shared_ptr<const asn1::Cpm> cpm = boost::apply_visitor(visitor, *packet);
 
     if (cpm) {
-      RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received CPM #%d", received_cpm_num_);
 
       rclcpp::Time current_time = node_->now();
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_receive_r1 %ld", current_time.nanoseconds());
@@ -109,7 +117,9 @@ namespace v2x {
 
 
       // Calculate GDT and get GDT from CPM and calculate the "Age of CPM"
-      TimestampIts_t gt_cpm = message->cpm.generationTime;
+      // TimestampIts_t gt_cpm = message->cpm.generationTime;
+      asn_INTEGER2long(&message->cpm.generationTime, &most_recent_generation_time_cpm_);
+
       // const auto time_now = duration_cast<milliseconds> (runtime_.now().time_since_epoch());
       // uint16_t gdt = time_now.count();
       // int gdt_diff = (65536 + (gdt - gdt_cpm) % 65536) % 65536;
@@ -117,11 +127,8 @@ namespace v2x {
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT: %u", gdt);
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_R1R2: %d", gdt_diff);
 
-      vanetza::asn1::Cpm cpm_lte = node_->cpm_received_lte_;
-      long gt_cpm_lte;
-
-      asn_INTEGER2long(&cpm_lte->cpm.generationTime, &gt_cpm_lte);
-      RCLCPP_INFO(node_->get_logger(), "[INDICATE] LTE CPM: %d %ld", cpm_lte->header.stationID, gt_cpm_lte);
+      RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received CPM #%d gt_cpm_lte: %ld, gt_cpm: %ld (%ld)", received_cpm_num_, most_recent_generation_time_cpm_lte_, most_recent_generation_time_cpm_, most_recent_generation_time_cpm_-most_recent_generation_time_cpm_lte_);
+      
 
 
       CpmManagementContainer_t &management = message->cpm.cpmParameters.managementContainer;

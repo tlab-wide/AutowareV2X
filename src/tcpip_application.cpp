@@ -89,6 +89,7 @@ namespace v2x {
 
       // vanetza::ByteBuffer bbuffer{receive_buff_.data()};
       node_->cpm_received_lte_.decode(receive_buff_.data().data(), receive_buff_.data().size());
+      node_->cpm_app->indicateLTE();
 
       receive_buff_.consume(receive_buff_.size());
     }

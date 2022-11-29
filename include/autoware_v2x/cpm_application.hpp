@@ -20,6 +20,7 @@ namespace v2x
         PortType port() override;
         std::string uuidToHexString(const unique_identifier_msgs::msg::UUID&);
         void indicate(const DataIndication &, UpPacketPtr) override;
+        void indicateLTE();
         void set_interval(vanetza::Clock::duration);
         void setAllObjectsOfPersonsAnimalsToSend(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
         void updateObjectsList(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
@@ -113,6 +114,9 @@ namespace v2x
         int cpm_object_id_;
 
         bool use_dynamic_generation_rules_;
+
+        long most_recent_generation_time_cpm_;
+        long most_recent_generation_time_cpm_lte_;
     };
 }
 

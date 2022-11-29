@@ -135,6 +135,8 @@ namespace v2x
     
     context.enable(cp);
 
+    node_->cpm_app = cp;
+
     cp_started_ = true;
 
     io_service.run();

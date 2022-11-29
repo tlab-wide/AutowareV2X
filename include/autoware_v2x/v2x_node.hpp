@@ -30,6 +30,7 @@ namespace v2x
     void publishCpmSenderObject(double, double, double);
 
     TcpIpApplication *tcpip_app;
+    CpmApplication *cpm_app;
     
     std::ofstream latency_log_file;
 
