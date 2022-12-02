@@ -854,6 +854,13 @@
 <div class="highlight"><pre><span></span><code>docker network create --driver<span class="o">=</span>bridge --subnet<span class="o">=</span><span class="m">10</span>.0.0.0/24 v2x_net -o com.docker.network.bridge.name<span class="o">=</span><span class="s2">&quot;v2x_net&quot;</span>
 </code></pre></div>
 <h3 id="launch-two-its-s-containers">Launch two ITS-S containers<a class="headerlink" href="#launch-two-its-s-containers" title="Permanent link">#</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Here, we will use a Rocker extension called <a href="https://github.com/sloretz/off-your-rocker">off-your-rocker</a>.
+Install <code>off-your-rocker</code> by running the below:
+<div class="highlight"><pre><span></span><code>python3 -m pip install off-your-rocker
+</code></pre></div></p>
+</div>
 <p>In one terminal, use rocker to launch container <code>autoware_1</code>:
 <div class="highlight"><pre><span></span><code>rocker --nvidia --x11 --user --privileged --volume <span class="nv">$HOME</span>/workspace/autoware_docker --volume <span class="nv">$HOME</span>/data --network<span class="o">=</span>v2x_net --name autoware_1 --oyr-run-arg <span class="s2">&quot;--ip 10.0.0.2 --hostname autoware_1&quot;</span> -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
 </code></pre></div></p>
