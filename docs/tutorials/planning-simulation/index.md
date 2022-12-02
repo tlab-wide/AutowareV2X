@@ -24,6 +24,13 @@ docker network create --driver=bridge --subnet=10.0.0.0/24 v2x_net -o com.docker
 
 ### Launch two ITS-S containers
 
+!!! Note
+    Here, we will use a Rocker extension called [off-your-rocker](https://github.com/sloretz/off-your-rocker).
+    Install `off-your-rocker` by running the below:
+    ```bash
+    python3 -m pip install off-your-rocker
+    ```
+
 In one terminal, use rocker to launch container `autoware_1`:
 ```bash
 rocker --nvidia --x11 --user --privileged --volume $HOME/workspace/autoware_docker --volume $HOME/data --network=v2x_net --name autoware_1 --oyr-run-arg "--ip 10.0.0.2 --hostname autoware_1" -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
