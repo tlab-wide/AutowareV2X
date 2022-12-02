@@ -552,6 +552,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#open-pcap-file-in-wireshark" class="md-nav__link">
+    Open PCAP file in Wireshark
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#analyze-in-jupytelab" class="md-nav__link">
     Analyze in JupyteLab
   </a>
@@ -838,6 +845,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#open-pcap-file-in-wireshark" class="md-nav__link">
+    Open PCAP file in Wireshark
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#analyze-in-jupytelab" class="md-nav__link">
     Analyze in JupyteLab
   </a>
@@ -875,15 +889,25 @@
 <h1 id="recording-rosbag-and-tcpdump-for-analysis">Recording Rosbag and Tcpdump for Analysis<a class="headerlink" href="#recording-rosbag-and-tcpdump-for-analysis" title="Permanent link">#</a></h1>
 <h2 id="record-both-rosbag-and-tcpdump">Record both rosbag and tcpdump<a class="headerlink" href="#record-both-rosbag-and-tcpdump" title="Permanent link">#</a></h2>
 <p>In <code>autoware_1</code>:
-<div class="highlight"><pre><span></span><code>cd ~/workspace/autoware_docker
+<div class="highlight"><pre><span></span><code>docker exec -it autoware_1 bash
+cd ~/workspace/autoware_docker
 ros2 bag record -o test_sender_rosbag /perception/object_recognition/objects /tf
-tcpdump -i eth0 -w test_sender_tcpdump
+
+sudo apt update
+sudo apt install tcpdump
+sudo tcpdump -i eth0 -w test_sender_tcpdump.pcap
 </code></pre></div></p>
 <p>In <code>autoware_2</code>:
-<div class="highlight"><pre><span></span><code>cd ~/workspace/autoware_docker
+<div class="highlight"><pre><span></span><code>docker exec -it autoware_2 bash
+cd ~/workspace/autoware_docker
 ros2 bag record -o test_receiver_rosbag /v2x/cpm/objects /tf
-tcpdump -i eth0 -w test_receiver_tcpdump
+
+sudo apt update
+sudo apt install tcpdump
+sudo tcpdump -i eth0 -w test_receiver_tcpdump.pcap
 </code></pre></div></p>
+<h2 id="open-pcap-file-in-wireshark">Open PCAP file in Wireshark<a class="headerlink" href="#open-pcap-file-in-wireshark" title="Permanent link">#</a></h2>
+<p><img alt="" src="../wireshark_awv2x.png" /></p>
 <h2 id="analyze-in-jupytelab">Analyze in JupyteLab<a class="headerlink" href="#analyze-in-jupytelab" title="Permanent link">#</a></h2>
 <h3 id="plot-the-xy-coordinates-of-objects-in-test_sender_rosbag">Plot the x,y coordinates of objects in test_sender_rosbag<a class="headerlink" href="#plot-the-xy-coordinates-of-objects-in-test_sender_rosbag" title="Permanent link">#</a></h3>
 <ol>

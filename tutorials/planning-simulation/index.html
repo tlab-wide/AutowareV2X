@@ -864,7 +864,7 @@
 <p>Run the Planning Simulator in both <code>autoware_1</code> and <code>autoware_2</code>.</p>
 <p>In <code>autoware_1</code>:</p>
 <div class="highlight"><pre><span></span><code>cd ~/workspace/autoware_docker
-source ~/autoware_docker/install/setup.bash
+source install/setup.bash
 export AWID=1 # autoware_1
 source ~/workspace/autoware_docker/src/v2x/autowarev2x/setup.sh
 ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/data/maps/sample-map-planning vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
@@ -873,9 +873,10 @@ ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/data/m
 <p>Try adding some dummy cars by clicking <code>2D Dummy Car</code>.
 Note that you can make the dummy cars to be static by changing its <code>Velocity</code> to <code>0</code> in the <code>Tool Properties</code> pane.</p>
 <p><img alt="" src="tools-properties.png" /></p>
+<p><img alt="" src="autoware_1_rviz.png" /></p>
 <p>In <code>autoware_2</code>:</p>
 <div class="highlight"><pre><span></span><code>cd ~/workspace/autoware_docker
-source ~/autoware_docker/install/setup.bash
+source install/setup.bash
 export AWID=2 # autoware_2
 source ~/workspace/autoware_docker/src/v2x/autowarev2x/setup.sh
 ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/data/maps/sample-map-planning vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
@@ -885,8 +886,8 @@ ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/data/m
 <p>In <code>autoware_1</code>:
 <div class="highlight"><pre><span></span><code>docker exec -it autoware_1 bash
 sudo su
-cd ~/workspace/autoware_docker
-source ~/workspace/autoware_docker/install/setup.bash
+cd workspace/autoware_docker
+source install/setup.bash
 export AWID=1
 source ./src/v2x/autowarev2x/setup.sh
 ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0
@@ -897,8 +898,8 @@ It shows that you are "Sending CPM with n objects", and the <code>[objectsList]<
 <p>In <code>autoware_2</code>:
 <div class="highlight"><pre><span></span><code>docker exec -it autoware_2 bash
 sudo su
-cd ~/workspace/autoware_docker
-source ~/workspace/autoware_docker/install/setup.bash
+cd workspace/autoware_docker
+source install/setup.bash
 export AWID=2
 source ./src/v2x/autowarev2x/setup.sh
 ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0 is_sender:=false
@@ -909,9 +910,9 @@ ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0 is_sender:=false
 <ol>
 <li>Press "Add" from the Displays Panel <br>
 <img alt="" src="add-v2x-rviz-1.png" /></li>
-<li>Choose "By topic", then select PredictedObjects from /v2x/cpm/objects
+<li>Choose "By topic", then select PredictedObjects from /v2x/cpm/objects <br>
 <img alt="" src="add-v2x-rviz-2.png" /></li>
-<li>The CPM-shared objects are shown in Rviz!
+<li>The CPM-shared objects are shown in Rviz for <code>autoware_2</code>! <br>
 <img alt="" src="add-v2x-rviz-3.png" /></li>
 </ol>
 <h2 id="run-scenarios">Run scenarios<a class="headerlink" href="#run-scenarios" title="Permanent link">#</a></h2>
