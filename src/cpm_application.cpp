@@ -48,7 +48,7 @@ namespace v2x {
     cpm_num_(0),
     received_cpm_num_(0),
     cpm_object_id_(0),
-    use_dynamic_generation_rules_(true)
+    use_dynamic_generation_rules_(false)
   {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication started. is_sender: %d", is_sender_);
     set_interval(milliseconds(100));
@@ -625,6 +625,7 @@ namespace v2x {
       // std::thread lte_cpm = std::thread([&]() { sendViaLTE(); });
 
       node_->cpm_ = std::move(message_tmp);
+      node_->cpm_initialized = true;
       // memcpy(node_->cpm_, message, message.size());
 
 

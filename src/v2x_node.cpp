@@ -71,6 +71,8 @@ namespace v2x
     getcwd(cur_dir, 1024);
     std::string latency_log_filename = std::string(cur_dir) + "/latency_logs/latency_log_file_" + timestamp + ".csv";
     latency_log_file.open(latency_log_filename, std::ios::out);
+
+    cpm_initialized = false;
   }
 
   void V2XNode::publishCpmSenderObject(double x_mgrs, double y_mgrs, double orientation) {

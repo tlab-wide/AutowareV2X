@@ -147,6 +147,7 @@ namespace v2x {
     if (error) {
       RCLCPP_INFO(node_->get_logger(), "LTE Connection fail\n%s", error.message().c_str());
       // std::cout << "connect failed : " << error.message() << std::endl;
+      socket->close();
       return;
     }
     RCLCPP_INFO(node_->get_logger(), "LTE Connected");
@@ -159,7 +160,8 @@ namespace v2x {
     // vanetza::ByteBuffer data;
     // std::cout << "writeToLTE: " << data.size() << std::endl;
     // memcpy(data, *(node_->cpm_)->encode(), (*(node_->cpm_)->encode()).size());
-    boost::asio::async_write(
+    if (node_->cpm_initialized) {
+      boost::asio::async_write(
       *socket, 
       // boost::asio::buffer(&data[0], data.size()), 
       boost::asio::buffer(node_->cpm_.encode(), (node_->cpm_.encode()).size()), 
@@ -167,6 +169,10 @@ namespace v2x {
                   boost::asio::placeholders::error,
                   boost::asio::placeholders::bytes_transferred,
                   socket));
+    } else {
+      socket->close();
+    }
+   
   }
 
   void TcpIpApplication::onSendToLTE(const boost::system::error_code& error, size_t bytes_transferred, boost::asio::ip::tcp::socket *socket) {

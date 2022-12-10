@@ -37,6 +37,8 @@ namespace v2x
     vanetza::asn1::Cpm cpm_;
     vanetza::asn1::Cpm cpm_received_lte_;
 
+    bool cpm_initialized;
+
   private:
     void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);
     void tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg);
