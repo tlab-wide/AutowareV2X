@@ -10,172 +10,70 @@
 
 namespace v2x {
   TcpIpApplication::TcpIpApplication(V2XNode *node) : 
-    node_(node)
+    node_(node),
+    remote_endpoint_(boost::asio::ip::udp::v4(), 2009),
+    remote_endpoint_sender_(boost::asio::ip::make_address("127.0.0.1"), 2009)
   {
 
   }
 
   void TcpIpApplication::start() {
     boost::asio::io_service io_service;
-
-    boost::asio::ip::tcp::socket socket(io_service);
-
-    boost::asio::steady_timer t(io_service, boost::asio::chrono::milliseconds(500));
-
+    boost::asio::ip::udp::socket socket(io_service);
+    boost::asio::steady_timer t(io_service, boost::asio::chrono::milliseconds(300));
     t.async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, &socket, &t));
-
-    // sendViaLTE(&socket);
-
     io_service.run();
-
   }
 
   void TcpIpApplication::startReceiver() {
     boost::asio::io_service io_service;
-
-    boost::asio::ip::tcp::socket socket(io_service);
-
-    boost::asio::ip::tcp::acceptor acceptor(io_service,
-      boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 6000));
-
-    // t.async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, &socket, &t));
-
-    // sendViaLTE(&socket);
-
-    acceptViaLTE(&socket, &acceptor);
-
+    boost::asio::ip::udp::socket socket(io_service);
+    start_receive(&socket);
     io_service.run();
   }
 
-  void TcpIpApplication::acceptViaLTE(boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor) {
-    acceptor->async_accept(
-      *socket,
-      boost::bind(&TcpIpApplication::on_accept, 
-                  this,
-                  boost::asio::placeholders::error,
-                  socket,
-                  acceptor));
+  void TcpIpApplication::start_receive(boost::asio::ip::udp::socket *socket) {
+    socket->async_receive_from(
+      boost::asio::buffer(receive_buff_),
+      remote_endpoint_,
+      boost::bind(&TcpIpApplication::handle_receive, this,
+        socket,
+        boost::asio::placeholders::error, _2));
   }
 
-  void TcpIpApplication::on_accept(const boost::system::error_code& error, boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor) {
-    if (error) {
-      std::cout << "accept failed: " << error.message() << std::endl;
-      return;
-    }
-
-    start_receive(socket, acceptor);
-  }
-
-  void TcpIpApplication::start_receive(boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor) {
-    boost::asio::async_read(
-      *socket,
-      receive_buff_,
-      boost::asio::transfer_all(),
-      boost::bind(&TcpIpApplication::on_receive, this,
-                  boost::asio::placeholders::error, 
-                  boost::asio::placeholders::bytes_transferred,
-                  socket,
-                  acceptor));
-  }
-
-  void TcpIpApplication::on_receive(const boost::system::error_code& error, size_t bytes_transferred,
-    boost::asio::ip::tcp::socket *socket, boost::asio::ip::tcp::acceptor *acceptor) {
-    if (error && error != boost::asio::error::eof) {
-      std::cout << "receive failed: " << error.message() << std::endl;
-    }
-    else {
-      const char* data = boost::asio::buffer_cast<const char*>(receive_buff_.data());
-      std::cout << data << std::endl;
-
-      // vanetza::ByteBuffer bbuffer{receive_buff_.data()};
-      node_->cpm_received_lte_.decode(receive_buff_.data().data(), receive_buff_.data().size());
+  void TcpIpApplication::handle_receive(boost::asio::ip::udp::socket *socket, const boost::system::error_code& error, size_t len) {
+    if (!error || error == boost::asio::error::message_size){
+      std::cout << remote_endpoint_.address() << ":" << remote_endpoint_.port() << std::endl ;
+      // const char* data = boost::asio::buffer_cast<const char*>(receive_buff_.data());
+      // const char* data = boost::asio::buffer_cast<const char*>(receive_buff_.data());
+      // std::cout << receive_buff_ << std::endl;
+      // node_->cpm_received_lte_.decode(receive_buff_.data().data(), receive_buff_.data().size());
+      node_->cpm_received_lte_.decode(boost::asio::buffer(receive_buff_).data(), boost::asio::buffer(receive_buff_).size());
       node_->cpm_app->indicateLTE();
-
-      receive_buff_.consume(receive_buff_.size());
+      // boost::asio::buffer(receive_buff_).consume(boost::asio::buffer(receive_buff_).size());
+      start_receive(socket);
     }
-
-    socket->close();
-
-    acceptor->async_accept(
-      *socket,
-      boost::bind(&TcpIpApplication::on_accept, 
-                  this,
-                  boost::asio::placeholders::error,
-                  socket,
-                  acceptor));
-
   }
+  
 
-  void TcpIpApplication::sendViaLTE(boost::asio::ip::tcp::socket *socket, boost::asio::steady_timer *t) {
+  void TcpIpApplication::sendViaLTE(boost::asio::ip::udp::socket *socket, boost::asio::steady_timer *t) {
 
     RCLCPP_INFO(node_->get_logger(), "[sendViaLTE]");
   
-    // boost::asio::tcp::socket socket(io_service_);
-    boost::system::error_code ec;
+    socket->async_send_to(
+      boost::asio::buffer(node_->cpm_.encode(), (node_->cpm_.encode()).size()), 
+      remote_endpoint_sender_,
+      std::bind(&TcpIpApplication::on_sent, this,  socket, t, std::placeholders::_1));
+  }
 
-    // std::thread thrContext = std::thread([&]() { context_.run(); });
+  void TcpIpApplication::on_sent(boost::asio::ip::udp::socket *socket, boost::asio::steady_timer *t, const boost::system::error_code& error) {
+    if (error) {
+      std::cout << "sending CPM(LTE) failed" << std::endl;
+    }
 
-    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address("60.56.123.234", ec), 6000);
-
-    // boost::asio::ip::tcp::socket socket(context);
-
-    // ASYNC: Connect to receiver_ip and run on_connect as callback
-    // socket.async_connect(
-    //   boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address("60.56.123.234", ec), 6000),
-    //   boost::bind(&CpamSender::on_connect, this, boost::asio::placeholders::error)
-    // );
-
-    // socket.connect(endpoint, ec);
-
-    // socket_ = socket_(context_);
-
-    socket->async_connect(
-      endpoint,
-      boost::bind(&TcpIpApplication::on_connect, this, boost::asio::placeholders::error, socket));
-
-    // context_.stop();
-
-    // if (thrContext.joinable()) thrContext.join();
-
-    t->expires_at(t->expiry() + boost::asio::chrono::milliseconds(500));
+    t->expires_at(t->expiry() + boost::asio::chrono::milliseconds(300));
     t->async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, socket, t));
 
-  }
-
-  void TcpIpApplication::on_connect(const boost::system::error_code& error, boost::asio::ip::tcp::socket *socket) {
-    RCLCPP_INFO(node_->get_logger(), "[on_connect]");
-    if (error) {
-      RCLCPP_INFO(node_->get_logger(), "LTE Connection fail\n%s", error.message().c_str());
-      // std::cout << "connect failed : " << error.message() << std::endl;
-      return;
-    }
-    RCLCPP_INFO(node_->get_logger(), "LTE Connected");
-    writeToLTE(socket);
-  }
-
-  void TcpIpApplication::writeToLTE(boost::asio::ip::tcp::socket *socket) {
-    // std::string data = "Hello world";
-    std::cout << "writeToLTE" << std::endl;
-    // vanetza::ByteBuffer data;
-    // std::cout << "writeToLTE: " << data.size() << std::endl;
-    // memcpy(data, *(node_->cpm_)->encode(), (*(node_->cpm_)->encode()).size());
-    boost::asio::async_write(
-      *socket, 
-      // boost::asio::buffer(&data[0], data.size()), 
-      boost::asio::buffer(node_->cpm_.encode(), (node_->cpm_.encode()).size()), 
-      boost::bind(&TcpIpApplication::onSendToLTE, this,
-                  boost::asio::placeholders::error,
-                  boost::asio::placeholders::bytes_transferred,
-                  socket));
-  }
-
-  void TcpIpApplication::onSendToLTE(const boost::system::error_code& error, size_t bytes_transferred, boost::asio::ip::tcp::socket *socket) {
-    if (error) {
-      std::cout << "send failed: " << error.message() << std::endl;
-    } else {
-      std::cout << "send correct!" << std::endl;
-    }
-    socket->close();
   }
 
 }
