@@ -92,9 +92,11 @@ namespace v2x {
     vanetza::asn1::Cpm cpm_lte = node_->cpm_received_lte_;
     asn_INTEGER2long(&cpm_lte->cpm.generationTime, &most_recent_generation_time_cpm_lte_);
 
-    if (most_recent_generation_time_cpm_lte_ > most_recent_generation_time_cpm_) {
-      RCLCPP_INFO(node_->get_logger(), "[INDICATELTE] gt_cpm_lte: %ld, gt_cpm: %ld (%ld)", most_recent_generation_time_cpm_lte_, most_recent_generation_time_cpm_, most_recent_generation_time_cpm_-most_recent_generation_time_cpm_lte_);
-    }
+    RCLCPP_INFO(node_->get_logger(), "[INDICATELTE] %ld", most_recent_generation_time_cpm_lte_);
+
+    // if (most_recent_generation_time_cpm_lte_ > most_recent_generation_time_cpm_) {
+    //   RCLCPP_INFO(node_->get_logger(), "[INDICATELTE] %ld", most_recent_generation_time_cpm_lte_);
+    // }
   }
 
   void CpmApplication::indicate(const DataIndication &indication, UpPacketPtr packet) {
@@ -127,7 +129,7 @@ namespace v2x {
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] GDT: %u", gdt);
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_R1R2: %d", gdt_diff);
 
-      RCLCPP_INFO(node_->get_logger(), "[INDICATE] Received CPM #%d gt_cpm_lte: %ld, gt_cpm: %ld (%ld)", received_cpm_num_, most_recent_generation_time_cpm_lte_, most_recent_generation_time_cpm_, most_recent_generation_time_cpm_-most_recent_generation_time_cpm_lte_);
+      RCLCPP_INFO(node_->get_logger(), "[INDICATE] %ld", most_recent_generation_time_cpm_);
       
 
 
