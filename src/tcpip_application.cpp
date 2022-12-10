@@ -11,28 +11,28 @@
 namespace v2x {
   TcpIpApplication::TcpIpApplication(V2XNode *node) : 
     node_(node),
-    remote_endpoint_(boost::asio::ip::udp::v4(), 2009),
-    remote_endpoint_sender_(boost::asio::ip::make_address("127.0.0.1"), 2009)
-  {
-
-  }
+    remote_endpoint_sender_(boost::asio::ip::udp::endpoint(boost::asio::ip::make_address("127.0.0.1"), 2009))
+  {}
 
   void TcpIpApplication::start() {
     boost::asio::io_service io_service;
-    boost::asio::ip::udp::socket socket(io_service);
+    socket_ = std::make_shared<boost::asio::ip::udp::socket>(io_service, remote_endpoint_sender_);
+    // socket_sender_(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::make_address("127.0.0.1"), 2009));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
     boost::asio::steady_timer t(io_service, boost::asio::chrono::milliseconds(300));
-    t.async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, &socket, &t));
+    t.async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, &t));
     io_service.run();
   }
 
   void TcpIpApplication::startReceiver() {
     boost::asio::io_service io_service;
-    boost::asio::ip::udp::socket socket(io_service);
+    boost::asio::ip::udp::socket socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 2009));
     start_receive(&socket);
     io_service.run();
   }
 
   void TcpIpApplication::start_receive(boost::asio::ip::udp::socket *socket) {
+    std::cout << "[start_receive]" << std::endl;
     socket->async_receive_from(
       boost::asio::buffer(receive_buff_),
       remote_endpoint_,
@@ -56,23 +56,23 @@ namespace v2x {
   }
   
 
-  void TcpIpApplication::sendViaLTE(boost::asio::ip::udp::socket *socket, boost::asio::steady_timer *t) {
+  void TcpIpApplication::sendViaLTE(boost::asio::steady_timer *t) {
 
     RCLCPP_INFO(node_->get_logger(), "[sendViaLTE]");
   
-    socket->async_send_to(
+    socket_->async_send_to(
       boost::asio::buffer(node_->cpm_.encode(), (node_->cpm_.encode()).size()), 
       remote_endpoint_sender_,
-      std::bind(&TcpIpApplication::on_sent, this,  socket, t, std::placeholders::_1));
+      std::bind(&TcpIpApplication::on_sent, this, t, std::placeholders::_1));
   }
 
-  void TcpIpApplication::on_sent(boost::asio::ip::udp::socket *socket, boost::asio::steady_timer *t, const boost::system::error_code& error) {
+  void TcpIpApplication::on_sent(boost::asio::steady_timer *t, const boost::system::error_code& error) {
     if (error) {
-      std::cout << "sending CPM(LTE) failed" << std::endl;
+      std::cout << "sending CPM(LTE) failed: " << error.message().c_str() << std::endl;
     }
 
     t->expires_at(t->expiry() + boost::asio::chrono::milliseconds(300));
-    t->async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, socket, t));
+    t->async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, t));
 
   }
 

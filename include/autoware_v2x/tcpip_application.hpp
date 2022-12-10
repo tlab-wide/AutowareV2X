@@ -17,8 +17,8 @@ namespace v2x {
       TcpIpApplication(V2XNode *node);
 
       void start();
-      void sendViaLTE(boost::asio::ip::udp::socket *socket, boost::asio::steady_timer *t);
-      void on_sent(boost::asio::ip::udp::socket *socket, boost::asio::steady_timer *t, const boost::system::error_code& error);
+      void sendViaLTE(boost::asio::steady_timer *t);
+      void on_sent(boost::asio::steady_timer *t, const boost::system::error_code& error);
 
       void startReceiver();
       void start_receive(boost::asio::ip::udp::socket *socket);
@@ -29,6 +29,7 @@ namespace v2x {
       boost::array<char,2048> receive_buff_;
       boost::asio::ip::udp::endpoint remote_endpoint_;
       boost::asio::ip::udp::endpoint remote_endpoint_sender_;
+      std::shared_ptr<boost::asio::ip::udp::socket> socket_;
   };
 }
 
