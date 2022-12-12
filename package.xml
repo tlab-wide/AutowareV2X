@@ -10,7 +10,8 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>autoware_auto_perception_msgs</depend>
-  <depend>tf2_msgs</depend>
+  <depend>tf2_msgs</depend> 
+  <depend>tf2</depend>
   <depend>geometry_msgs</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
