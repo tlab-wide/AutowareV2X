@@ -47,12 +47,12 @@ cd ~/workspace/autoware_docker
 ```
 v2x/autowarev2x:
   type: git
-  url: git@github.com:tlab-wide/AutowareV2X.git
-  version: main
+  url: https://github.com/tlab-wide/AutowareV2X.git
+  version: cpm-tr
 v2x/vanetza:
   type: git
-  url: git@github.com:tlab-wide/vanetza.git
-  version: socktap-cpm-tr103562
+  url: https://github.com/yuasabe/vanetza.git
+  version: master
 
 ```
 

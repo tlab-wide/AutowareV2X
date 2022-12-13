@@ -24,6 +24,13 @@ docker network create --driver=bridge --subnet=10.0.0.0/24 v2x_net -o com.docker
 
 ### Launch two ITS-S containers
 
+!!! Note
+    Here, we will use a Rocker extension called [off-your-rocker](https://github.com/sloretz/off-your-rocker).
+    Install `off-your-rocker` by running the below:
+    ```bash
+    python3 -m pip install off-your-rocker
+    ```
+
 In one terminal, use rocker to launch container `autoware_1`:
 ```bash
 rocker --nvidia --x11 --user --privileged --volume $HOME/workspace/autoware_docker --volume $HOME/data --network=v2x_net --name autoware_1 --oyr-run-arg "--ip 10.0.0.2 --hostname autoware_1" -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
@@ -42,7 +49,7 @@ In `autoware_1`:
 
 ```
 cd ~/workspace/autoware_docker
-source ~/autoware_docker/install/setup.bash
+source install/setup.bash
 export AWID=1 # autoware_1
 source ~/workspace/autoware_docker/src/v2x/autowarev2x/setup.sh
 ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/data/maps/sample-map-planning vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
@@ -55,11 +62,13 @@ Note that you can make the dummy cars to be static by changing its `Velocity` to
 
 ![](./tools-properties.png)
 
+![](./autoware_1_rviz.png)
+
 In `autoware_2`:
 
 ```
 cd ~/workspace/autoware_docker
-source ~/autoware_docker/install/setup.bash
+source install/setup.bash
 export AWID=2 # autoware_2
 source ~/workspace/autoware_docker/src/v2x/autowarev2x/setup.sh
 ros2 launch autoware_launch planning_simulator.launch.xml map_path:=$HOME/data/maps/sample-map-planning vehicle_model:=sample_vehicle sensor_model:=sample_sensor_kit
@@ -74,8 +83,8 @@ In `autoware_1`:
 ```
 docker exec -it autoware_1 bash
 sudo su
-cd ~/workspace/autoware_docker
-source ~/workspace/autoware_docker/install/setup.bash
+cd workspace/autoware_docker
+source install/setup.bash
 export AWID=1
 source ./src/v2x/autowarev2x/setup.sh
 ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0
@@ -89,8 +98,8 @@ In `autoware_2`:
 ```
 docker exec -it autoware_2 bash
 sudo su
-cd ~/workspace/autoware_docker
-source ~/workspace/autoware_docker/install/setup.bash
+cd workspace/autoware_docker
+source install/setup.bash
 export AWID=2
 source ./src/v2x/autowarev2x/setup.sh
 ros2 launch autoware_v2x v2x.launch.xml network_interface:=eth0 is_sender:=false
@@ -104,9 +113,9 @@ When both the sender and receiver is launched, you should see that the receiver 
 
 1. Press "Add" from the Displays Panel <br>
 ![](./add-v2x-rviz-1.png)
-2. Choose "By topic", then select PredictedObjects from /v2x/cpm/objects
+2. Choose "By topic", then select PredictedObjects from /v2x/cpm/objects <br>
 ![](./add-v2x-rviz-2.png)
-3. The CPM-shared objects are shown in Rviz!
+3. The CPM-shared objects are shown in Rviz for `autoware_2`! <br>
 ![](./add-v2x-rviz-3.png)
 
 ## Run scenarios

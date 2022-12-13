@@ -37,14 +37,14 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 1. Edit the `autoware.repos` file and add the following two repositories to the end.
 ```
-v2x/autoware_v2x:
+v2x/autowarev2x:
   type: git
-  url: git@github.com:tlab-wide/autoware_v2x.git
-  version: main
+  url: https://github.com/tlab-wide/AutowareV2X.git
+  version: cpm-tr
 v2x/vanetza:
   type: git
-  url: git@github.com:tlab-wide/vanetza.git
-  version: socktap-cpm-tr103562
+  url: https://github.com/yuasabe/vanetza.git
+  version: master
 
 ```
 
