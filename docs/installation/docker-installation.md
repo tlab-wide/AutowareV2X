@@ -9,6 +9,9 @@ In order to run the simulations explained in the [Tutorials](/tutorials) section
 
 For the newest documentation for the Docker installation of Autoware, see their [official documentation](https://autowarefoundation.github.io/autoware-documentation/main/installation/autoware/docker-installation/).
 
+### Prerequisites
+- git
+
 ### Setup
 
 ```bash
