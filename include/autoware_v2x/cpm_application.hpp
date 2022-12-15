@@ -74,6 +74,7 @@ namespace v2x
             int timeOfMeasurement;
             bool to_send;
             int to_send_trigger;
+            autoware_auto_perception_msgs::msg::ObjectClassification classification;
         };
         std::vector<CpmApplication::Object> objectsList;
         std::vector<CpmApplication::Object> receivedObjectsStack;

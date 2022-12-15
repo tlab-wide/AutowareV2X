@@ -195,6 +195,15 @@ namespace v2x {
           object.orientation_w = quat.w();
           // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] object.quat: %f, %f, %f, %f", object.orientation_x, object.orientation_y, object.orientation_z, object.orientation_w);
 
+          if (poc->list.array[i]->classification->list.array[0]->Class.present == ObjectClass__class_PR_person) {
+            object.classification.label = autoware_auto_perception_msgs::msg::ObjectClassification::PEDESTRIAN;
+          } else if (poc->list.array[i]->classification->list.array[0]->Class.present == ObjectClass__class_PR_vehicle) {
+             object.classification.label = autoware_auto_perception_msgs::msg::ObjectClassification::CAR;
+          } else {
+             object.classification.label = autoware_auto_perception_msgs::msg::ObjectClassification::UNKNOWN;
+          }
+          object.classification.probability = 1.0;
+
           receivedObjectsStack.push_back(object);
         }
         node_->publishObjects(&receivedObjectsStack, header.stationID);
@@ -321,6 +330,9 @@ namespace v2x {
             object.shape_x = std::lround(obj.shape.dimensions.x * 10.0);
             object.shape_y = std::lround(obj.shape.dimensions.y * 10.0);
             object.shape_z = std::lround(obj.shape.dimensions.z * 10.0);
+
+            object.classification.label = obj.classification.front().label;
+            object.classification.probability = obj.classification.front().probability;
 
             long long msg_timestamp_sec = msg->header.stamp.sec;
             long long msg_timestamp_nsec = msg->header.stamp.nanosec;
@@ -573,6 +585,19 @@ namespace v2x {
             pObj->yawAngle = vanetza::asn1::allocate<CartesianAngle>();
             (*(pObj->yawAngle)).value = object.yawAngle;
             (*(pObj->yawAngle)).confidence = 1;
+
+            ObjectClassDescription *&ocd = pObj->classification;
+            ocd = vanetza::asn1::allocate<ObjectClassDescription>();
+            ObjectClass_t *oc = vanetza::asn1::allocate<ObjectClass_t>();
+            if (object.classification.label == autoware_auto_perception_msgs::msg::ObjectClassification::PEDESTRIAN) {
+              oc->Class.present = ObjectClass__class_PR_person;
+            } else if (object.classification.label == autoware_auto_perception_msgs::msg::ObjectClassification::CAR || object.classification.label == autoware_auto_perception_msgs::msg::ObjectClassification::BUS) {
+              oc->Class.present = ObjectClass__class_PR_vehicle;
+            } else {
+               oc->Class.present = ObjectClass__class_PR_other;
+            }
+            oc->confidence = ClassConfidence_oneHundredPercent;
+            ASN_SEQUENCE_ADD(ocd, oc);
 
             ASN_SEQUENCE_ADD(poc, pObj);
 

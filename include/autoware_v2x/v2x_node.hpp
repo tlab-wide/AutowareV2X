@@ -17,6 +17,19 @@
 #include "autoware_v2x/router_context.hpp"
 #include <fstream>
 
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <pcl/common/distances.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2/convert.h>
+#include <tf2/transform_datatypes.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+
+#include <random>
+
 #include <vanetza/asn1/cpm.hpp>
 
 namespace v2x
@@ -42,11 +55,19 @@ namespace v2x
   private:
     void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);
     void tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg);
+    // void createObjectPointcloud(
+    //   const double length, const double width, const double height, const double std_dev_x,
+    //   const double std_dev_y, const double std_dev_z, const tf2::Transform & tf_base_link2moved_object,
+    //   pcl::PointCloud<pcl::PointXYZ>::Ptr & pointcloud_ptr);
 
     rclcpp::Subscription<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr objects_sub_;
     rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tf_sub_;
     rclcpp::Publisher<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr cpm_objects_pub_;
     rclcpp::Publisher<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr cpm_sender_pub_;
+    // rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_pub_;
+    // tf2_ros::Buffer tf_buffer_;
+    // tf2_ros::TransformListener tf_listener_;
+    // std::mt19937 random_generator_;
 
     double pos_lat_;
     double pos_lon_;

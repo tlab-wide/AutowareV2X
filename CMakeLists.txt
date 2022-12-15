@@ -25,6 +25,7 @@ find_package(GeographicLib 1.37 REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
 ament_auto_find_build_dependencies()
 find_package(std_msgs REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common filters)
 
 include_directories(
   include
@@ -46,7 +47,7 @@ ament_auto_add_library(autoware_v2x SHARED
   src/tcpip_application.cpp
 )
 
-target_link_libraries(autoware_v2x Vanetza::vanetza ${GeographicLib_LIBRARIES} Boost::thread sqlite3)
+target_link_libraries(autoware_v2x Vanetza::vanetza ${GeographicLib_LIBRARIES} Boost::thread sqlite3 ${PCL_LIBRARIES})
 
 rclcpp_components_register_node(autoware_v2x
   PLUGIN "v2x::V2XNode"

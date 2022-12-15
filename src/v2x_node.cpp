@@ -35,8 +35,10 @@ namespace v2x
     objects_sub_ = this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>("/perception/object_recognition/objects", 10, std::bind(&V2XNode::objectsCallback, this, _1));
     tf_sub_ = this->create_subscription<tf2_msgs::msg::TFMessage>("/tf", 10, std::bind(&V2XNode::tfCallback, this, _1));
 
-    cpm_objects_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/objects", rclcpp::QoS{10});
+    cpm_objects_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/perception/object_recognition/objects", rclcpp::QoS{10});
     // cpm_sender_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/sender", rclcpp::QoS{10});
+
+    // pointcloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/perception/obstacle_segmentation/pointcloud_test", rclcpp::QoS{1});
 
     // Declare Parameters
     this->declare_parameter<std::string>("network_interface", "vmnet1");
@@ -124,14 +126,16 @@ namespace v2x
     output_dynamic_object_msg.header.frame_id = "map";
     output_dynamic_object_msg.header.stamp = current_time;
 
+    // std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> v_pointcloud;
+
     for (CpmApplication::Object obj : *objectsStack) {
       autoware_auto_perception_msgs::msg::PredictedObject object;
       autoware_auto_perception_msgs::msg::ObjectClassification classification;
       autoware_auto_perception_msgs::msg::Shape shape;
       autoware_auto_perception_msgs::msg::PredictedObjectKinematics kinematics;
 
-      classification.label = autoware_auto_perception_msgs::msg::ObjectClassification::CAR;
-      classification.probability = 0.99;
+      classification.label = obj.classification.label;
+      classification.probability = obj.classification.probability;
 
       shape.type = autoware_auto_perception_msgs::msg::Shape::BOUNDING_BOX;
       shape.dimensions.x = obj.shape_x / 10.0;
@@ -156,6 +160,25 @@ namespace v2x
       std::generate(object.object_id.uuid.begin(), object.object_id.uuid.end(), bit_eng);
 
       output_dynamic_object_msg.objects.push_back(object);
+
+    //   rclcpp::Time current_time_tf = this->now();
+    //   tf2::Transform tf_base_link2map;
+    //   try {
+    //     geometry_msgs::msg::TransformStamped ros_base_link2map;
+    //     ros_base_link2map = tf_buffer_.lookupTransform(
+    //       /*target*/ "base_link", /*src*/ "map", current_time_tf, rclcpp::Duration::from_seconds(0.5));
+    //     tf2::fromMsg(ros_base_link2map.transform, tf_base_link2map);
+    //   } catch (tf2::TransformException & ex) {
+    //     RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "%s", ex.what());
+    //     return;
+    //   }
+
+    //   // pointcloud
+    //   pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    //   createObjectPointcloud(
+    //     10, 10, 10, 1.0, 1.0, 1.0,
+    //     tf_base_link2map, pointcloud_ptr);
+    //   v_pointcloud.push_back(pointcloud_ptr);
     }
 
     std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds> (
@@ -164,6 +187,24 @@ namespace v2x
     latency_log_file << "T_publish," << cpm_num << "," << ms.count() << std::endl;
 
     cpm_objects_pub_->publish(output_dynamic_object_msg);
+
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr merged_pointcloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    // for (size_t i = 0; i < v_pointcloud.size(); ++i) {
+    //   for (size_t j = 0; j < v_pointcloud.at(i)->size(); ++j) {
+    //     merged_pointcloud_ptr->push_back(v_pointcloud.at(i)->at(j));
+    //   }
+    // }
+
+    // sensor_msgs::msg::PointCloud2 output_pointcloud_msg;
+
+    // // no ground
+    // pcl::toROSMsg(*merged_pointcloud_ptr, output_pointcloud_msg);
+
+    // output_pointcloud_msg.header.frame_id = "base_link";
+    // output_pointcloud_msg.header.stamp = current_time;
+
+    // // publish
+    // pointcloud_pub_->publish(output_pointcloud_msg);
   }
 
   void V2XNode::objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
@@ -180,7 +221,119 @@ namespace v2x
   void V2XNode::tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg) {
     app->tfCallback(msg);
   }
+
+  // void V2XNode::createObjectPointcloud(
+  //   const double length, const double width, const double height, const double std_dev_x,
+  //   const double std_dev_y, const double std_dev_z, const tf2::Transform & tf_base_link2moved_object,
+  //   pcl::PointCloud<pcl::PointXYZ>::Ptr & pointcloud_ptr)
+  // {
+  //   std::normal_distribution<> x_random(0.0, std_dev_x);
+  //   std::normal_distribution<> y_random(0.0, std_dev_y);
+  //   std::normal_distribution<> z_random(0.0, std_dev_z);
+  //   auto getBaseLinkTo2DPoint = [tf_base_link2moved_object](double x, double y) -> pcl::PointXYZ {
+  //     tf2::Transform tf_moved_object2point;
+  //     tf2::Transform tf_base_link2point;
+  //     geometry_msgs::msg::Transform ros_moved_object2point;
+  //     ros_moved_object2point.translation.x = x;
+  //     ros_moved_object2point.translation.y = y;
+  //     ros_moved_object2point.translation.z = 0.0;
+  //     ros_moved_object2point.rotation.x = 0;
+  //     ros_moved_object2point.rotation.y = 0;
+  //     ros_moved_object2point.rotation.z = 0;
+  //     ros_moved_object2point.rotation.w = 1;
+  //     tf2::fromMsg(ros_moved_object2point, tf_moved_object2point);
+  //     tf_base_link2point = tf_base_link2moved_object * tf_moved_object2point;
+  //     pcl::PointXYZ point;
+  //     point.x = tf_base_link2point.getOrigin().x();
+  //     point.y = tf_base_link2point.getOrigin().y();
+  //     point.z = tf_base_link2point.getOrigin().z();
+  //     return point;
+  //   };
+  //   const double epsilon = 0.001;
+  //   const double step = 0.05;
+  //   const double vertical_theta_step = (1.0 / 180.0) * M_PI;
+  //   const double vertical_min_theta = (-15.0 / 180.0) * M_PI;
+  //   const double vertical_max_theta = (15.0 / 180.0) * M_PI;
+  //   const double horizontal_theta_step = (0.1 / 180.0) * M_PI;
+  //   const double horizontal_min_theta = (-180.0 / 180.0) * M_PI;
+  //   const double horizontal_max_theta = (180.0 / 180.0) * M_PI;
+
+  //   const double min_z = -1.0 * (height / 2.0) + tf_base_link2moved_object.getOrigin().z();
+  //   const double max_z = 1.0 * (height / 2.0) + tf_base_link2moved_object.getOrigin().z();
+  //   pcl::PointCloud<pcl::PointXYZ> horizontal_candidate_pointcloud;
+  //   pcl::PointCloud<pcl::PointXYZ> horizontal_pointcloud;
+  //   {
+  //     const double y = -1.0 * (width / 2.0);
+  //     for (double x = -1.0 * (length / 2.0); x <= ((length / 2.0) + epsilon); x += step) {
+  //       horizontal_candidate_pointcloud.push_back(getBaseLinkTo2DPoint(x, y));
+  //     }
+  //   }
+  //   {
+  //     const double y = 1.0 * (width / 2.0);
+  //     for (double x = -1.0 * (length / 2.0); x <= ((length / 2.0) + epsilon); x += step) {
+  //       horizontal_candidate_pointcloud.push_back(getBaseLinkTo2DPoint(x, y));
+  //     }
+  //   }
+  //   {
+  //     const double x = -1.0 * (length / 2.0);
+  //     for (double y = -1.0 * (width / 2.0); y <= ((width / 2.0) + epsilon); y += step) {
+  //       horizontal_candidate_pointcloud.push_back(getBaseLinkTo2DPoint(x, y));
+  //     }
+  //   }
+  //   {
+  //     const double x = 1.0 * (length / 2.0);
+  //     for (double y = -1.0 * (width / 2.0); y <= ((width / 2.0) + epsilon); y += step) {
+  //       horizontal_candidate_pointcloud.push_back(getBaseLinkTo2DPoint(x, y));
+  //     }
+  //   }
+  //   // 2D ray tracing
+  //   size_t ranges_size =
+  //     std::ceil((horizontal_max_theta - horizontal_min_theta) / horizontal_theta_step);
+  //   std::vector<double> horizontal_ray_traced_2d_pointcloud;
+  //   horizontal_ray_traced_2d_pointcloud.assign(ranges_size, std::numeric_limits<double>::infinity());
+  //   const int no_data = -1;
+  //   std::vector<int> horizontal_ray_traced_pointcloud_indices;
+  //   horizontal_ray_traced_pointcloud_indices.assign(ranges_size, no_data);
+  //   for (size_t i = 0; i < horizontal_candidate_pointcloud.points.size(); ++i) {
+  //     double angle =
+  //       std::atan2(horizontal_candidate_pointcloud.at(i).y, horizontal_candidate_pointcloud.at(i).x);
+  //     double range =
+  //       std::hypot(horizontal_candidate_pointcloud.at(i).y, horizontal_candidate_pointcloud.at(i).x);
+  //     if (angle < horizontal_min_theta || angle > horizontal_max_theta) {
+  //       continue;
+  //     }
+  //     int index = (angle - horizontal_min_theta) / horizontal_theta_step;
+  //     if (range < horizontal_ray_traced_2d_pointcloud[index]) {
+  //       horizontal_ray_traced_2d_pointcloud[index] = range;
+  //       horizontal_ray_traced_pointcloud_indices.at(index) = i;
+  //     }
+  //   }
+  //   for (const auto & pointcloud_index : horizontal_ray_traced_pointcloud_indices) {
+  //     if (pointcloud_index != no_data) {
+  //       // generate vertical point
+  //       horizontal_pointcloud.push_back(horizontal_candidate_pointcloud.at(pointcloud_index));
+  //       const double distance = std::hypot(
+  //         horizontal_candidate_pointcloud.at(pointcloud_index).x,
+  //         horizontal_candidate_pointcloud.at(pointcloud_index).y);
+  //       for (double vertical_theta = vertical_min_theta;
+  //           vertical_theta <= vertical_max_theta + epsilon; vertical_theta += vertical_theta_step) {
+  //         const double z = distance * std::tan(vertical_theta);
+  //         if (min_z <= z && z <= max_z + epsilon) {
+  //           pcl::PointXYZ point;
+  //           point.x =
+  //             horizontal_candidate_pointcloud.at(pointcloud_index).x + x_random(random_generator_);
+  //           point.y =
+  //             horizontal_candidate_pointcloud.at(pointcloud_index).y + y_random(random_generator_);
+  //           point.z = z + z_random(random_generator_);
+  //           pointcloud_ptr->push_back(point);
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 }
+
+
 
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(v2x::V2XNode)
