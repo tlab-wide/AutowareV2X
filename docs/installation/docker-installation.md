@@ -14,15 +14,21 @@ For the newest documentation for the Docker installation of Autoware, see their 
 
 ### Setup
 
+1. Prepare the repository.
 ```bash
 mkdir -p ~/workspace && cd ~/workspace
 git clone https://github.com/autowarefoundation/autoware.git autoware_docker
 cd autoware_docker
+```
 
-# Install dependencies using Ansible
+2. Run the setup script for docker installation.
+```
 ./setup-dev-env.sh docker
+```
+You will need to restart your PC after the script is finished running.
 
-# Make directory to store maps
+3. Make directory to store maps
+```
 mkdir -p ~/data/maps
 ```
 
