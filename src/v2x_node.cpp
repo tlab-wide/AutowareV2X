@@ -43,6 +43,7 @@ namespace v2x
     // Declare Parameters
     this->declare_parameter<std::string>("network_interface", "vmnet1");
     this->declare_parameter<bool>("is_sender", true);
+    this->declare_parameter<bool>("reflect_packet", false);
 
     this->get_parameter("is_sender", is_sender_);
 
@@ -73,6 +74,10 @@ namespace v2x
     getcwd(cur_dir, 1024);
     std::string latency_log_filename = std::string(cur_dir) + "/latency_logs/latency_log_file_" + timestamp + ".csv";
     latency_log_file.open(latency_log_filename, std::ios::out);
+
+    // Make generation_time_log file from current timestamp
+    std::string generation_time_log_filename = std::string(cur_dir) + "/generation_time_logs/generation_time_log_file_" + timestamp + ".csv";
+    generation_time_log_file.open(generation_time_log_filename, std::ios::out);
 
     cpm_initialized = false;
   }

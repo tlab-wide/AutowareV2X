@@ -1,9 +1,11 @@
 <launch>
   <arg name="network_interface" default="wlp5s0"/>
   <arg name="is_sender" default="true"/>
+  <arg name="reflect_packet" default="false"/>
   <node pkg="autoware_v2x" exec="autoware_v2x_node" namespace="v2x" output="screen">
     <param from="$(find-pkg-share autoware_v2x)/config/autoware_v2x.param.yaml"/>
     <param name="network_interface" value="$(var network_interface)"/>
     <param name="is_sender" value="$(var is_sender)"/>
+    <param name="reflect_packet" value="$(var reflect_packet)"/>
   </node>
 </launch>

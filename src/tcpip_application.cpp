@@ -10,7 +10,7 @@
 
 namespace v2x {
   TcpIpApplication::TcpIpApplication(V2XNode *node) : 
-    node_(node)
+    node_(node), CPM_LTE_INTERVAL_(500)
   {
 
   }
@@ -20,7 +20,7 @@ namespace v2x {
 
     boost::asio::ip::tcp::socket socket(io_service);
 
-    boost::asio::steady_timer t(io_service, boost::asio::chrono::milliseconds(500));
+    boost::asio::steady_timer t(io_service, boost::asio::chrono::milliseconds(CPM_LTE_INTERVAL_));
 
     t.async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, &socket, &t));
 
@@ -115,7 +115,7 @@ namespace v2x {
 
     // std::thread thrContext = std::thread([&]() { context_.run(); });
 
-    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address("60.56.123.234", ec), 6000);
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address("10.0.1.3", ec), 6000);
 
     // boost::asio::ip::tcp::socket socket(context);
 
@@ -137,7 +137,7 @@ namespace v2x {
 
     // if (thrContext.joinable()) thrContext.join();
 
-    t->expires_at(t->expiry() + boost::asio::chrono::milliseconds(500));
+    t->expires_at(t->expiry() + boost::asio::chrono::milliseconds(CPM_LTE_INTERVAL_));
     t->async_wait(boost::bind(&TcpIpApplication::sendViaLTE, this, socket, t));
 
   }

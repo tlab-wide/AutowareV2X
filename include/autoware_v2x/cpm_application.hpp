@@ -16,7 +16,7 @@ namespace v2x
     class CpmApplication : public Application
     {
     public:
-        CpmApplication(V2XNode *node, vanetza::Runtime &, bool is_sender);
+        CpmApplication(V2XNode *node, vanetza::Runtime &, bool is_sender, bool reflect_packet);
         PortType port() override;
         std::string uuidToHexString(const unique_identifier_msgs::msg::UUID&);
         void indicate(const DataIndication &, UpPacketPtr) override;
@@ -44,7 +44,7 @@ namespace v2x
          *  @param cpm The CPM to be inserted 
          *  @param table_name The table to insert the CPM into (cpm_sent or cpm_received)
         */
-        void insertCpmToCpmTable(vanetza::asn1::Cpm, char*);
+        void insertCpmToCpmTable(vanetza::asn1::Cpm, int db_id);
 
         struct Object {
             std::string uuid;

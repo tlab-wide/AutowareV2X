@@ -131,7 +131,9 @@ namespace v2x
 
     bool is_sender;
     node_->get_parameter("is_sender", is_sender);
-    cp = new CpmApplication(node_, trigger.runtime(), is_sender);
+    bool reflect_packet;
+    node_->get_parameter("reflect_packet", reflect_packet);
+    cp = new CpmApplication(node_, trigger.runtime(), is_sender, reflect_packet);
     
     context.enable(cp);
 

@@ -29,6 +29,8 @@ namespace v2x {
     private:
       V2XNode *node_;
       boost::asio::streambuf receive_buff_;
+
+      int CPM_LTE_INTERVAL_;
   };
 }
 

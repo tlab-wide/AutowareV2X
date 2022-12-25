@@ -34,7 +34,7 @@ using namespace vanetza;
 using namespace std::chrono;
 
 namespace v2x {
-  CpmApplication::CpmApplication(V2XNode *node, Runtime &rt, bool is_sender) :     
+  CpmApplication::CpmApplication(V2XNode *node, Runtime &rt, bool is_sender, bool reflect_packet) :     
     node_(node),
     runtime_(rt),
     ego_(),
@@ -42,7 +42,7 @@ namespace v2x {
     updating_objects_list_(false),
     sending_(false),
     is_sender_(is_sender),
-    reflect_packet_(false),
+    reflect_packet_(reflect_packet),
     objectConfidenceThreshold_(0.0),
     include_all_persons_and_animals_(false),
     cpm_num_(0),
@@ -95,6 +95,7 @@ namespace v2x {
     asn_INTEGER2long(&cpm_lte->cpm.generationTime, &most_recent_generation_time_cpm_lte_);
 
     RCLCPP_INFO(node_->get_logger(), "[INDICATELTE] %ld", most_recent_generation_time_cpm_lte_);
+    node_->generation_time_log_file << "INDICATELTE," << most_recent_generation_time_cpm_lte_ << std::endl;
 
     // if (most_recent_generation_time_cpm_lte_ > most_recent_generation_time_cpm_) {
     //   RCLCPP_INFO(node_->get_logger(), "[INDICATELTE] %ld", most_recent_generation_time_cpm_lte_);
@@ -132,6 +133,7 @@ namespace v2x {
       // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::indicate] [measure] T_R1R2: %d", gdt_diff);
 
       RCLCPP_INFO(node_->get_logger(), "[INDICATE] %ld", most_recent_generation_time_cpm_);
+      node_->generation_time_log_file << "INDICATE," << most_recent_generation_time_cpm_ << std::endl;
       
 
 
@@ -213,7 +215,7 @@ namespace v2x {
         // RCLCPP_INFO(node_->get_logger(), "[INDICATE] Empty POC");
       }
 
-      insertCpmToCpmTable(message, (char*) "cpm_received");
+      insertCpmToCpmTable(message, 1);
 
       if (reflect_packet_) {
         Application::DownPacketPtr packet{new DownPacket()};
@@ -631,7 +633,7 @@ namespace v2x {
 
       RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] Sending CPM with %d objects", perceivedObjectsCount);
 
-      insertCpmToCpmTable(message, (char*) "cpm_sent");
+      insertCpmToCpmTable(message, 0);
       
       std::unique_ptr<geonet::DownPacket> payload{new geonet::DownPacket()};
 
@@ -678,7 +680,7 @@ namespace v2x {
     sqlite3 *db = NULL;
     char* err = NULL;
 
-    int ret = sqlite3_open("autoware_v2x.db", &db);
+    int ret = sqlite3_open("autoware_v2x_send.db", &db);
     if (ret != SQLITE_OK) {
       RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
       return;
@@ -696,6 +698,12 @@ namespace v2x {
       return;
     }
 
+    ret = sqlite3_open("autoware_v2x_receive.db", &db);
+    if (ret != SQLITE_OK) {
+      RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
+      return;
+    }
+
     sql_command = (char*) "create table if not exists cpm_received(id INTEGER PRIMARY KEY, timestamp BIGINT, perceivedObjectCount INTEGER);";
 
     ret = sqlite3_exec(db, sql_command, NULL, NULL, &err);
@@ -710,15 +718,9 @@ namespace v2x {
     RCLCPP_INFO(node_->get_logger(), "CpmApplication::createTables Finished");
   }
 
-  void CpmApplication::insertCpmToCpmTable(vanetza::asn1::Cpm cpm, char* table_name) {
+  void CpmApplication::insertCpmToCpmTable(vanetza::asn1::Cpm cpm, int db_id) {
     sqlite3 *db = NULL;
     char* err = NULL;
-
-    int ret = sqlite3_open("autoware_v2x.db", &db);
-    if (ret != SQLITE_OK) {
-      RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
-      return;
-    }
 
     int64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
@@ -728,20 +730,47 @@ namespace v2x {
     }
 
     std::stringstream sql_command;
-    
-    sql_command << "insert into " << table_name << " (timestamp, perceivedObjectCount) values (" << timestamp << ", " << perceivedObjectCount << ");";
 
-    ret = sqlite3_exec(db, sql_command.str().c_str(), NULL, NULL, &err);
-    if (ret != SQLITE_OK) {
-      RCLCPP_INFO(node_->get_logger(), "DB Execution Error (insertCpmToCpmTable)");
-      RCLCPP_INFO(node_->get_logger(), sql_command.str().c_str());
-      RCLCPP_INFO(node_->get_logger(), err);
+    if (db_id == 0) {
+      // Send DB
+      int ret = sqlite3_open("autoware_v2x_send.db", &db);
+      if (ret != SQLITE_OK) {
+        RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
+        return;
+      }
+      sql_command << "insert into cpm_sent (timestamp, perceivedObjectCount) values (" << timestamp << ", " << perceivedObjectCount << ");";
+      ret = sqlite3_exec(db, sql_command.str().c_str(), NULL, NULL, &err);
+      if (ret != SQLITE_OK) {
+        RCLCPP_INFO(node_->get_logger(), "DB Execution Error (insertCpmToCpmTable)");
+        RCLCPP_INFO(node_->get_logger(), sql_command.str().c_str());
+        RCLCPP_INFO(node_->get_logger(), err);
+        sqlite3_close(db);
+        sqlite3_free(err);
+        return;
+      }
+
       sqlite3_close(db);
-      sqlite3_free(err);
-      return;
-    }
 
-    sqlite3_close(db);
-    // RCLCPP_INFO(node_->get_logger(), "CpmApplication::insertCpmToCpmTable Finished");
+    } else if (db_id == 1) {
+      // Receive DB
+      int ret = sqlite3_open("autoware_v2x_receive.db", &db);
+      if (ret != SQLITE_OK) {
+        RCLCPP_INFO(node_->get_logger(), "DB File Open Error");
+        return;
+      }
+      sql_command << "insert into cpm_received (timestamp, perceivedObjectCount) values (" << timestamp << ", " << perceivedObjectCount << ");";
+
+      ret = sqlite3_exec(db, sql_command.str().c_str(), NULL, NULL, &err);
+      if (ret != SQLITE_OK) {
+        RCLCPP_INFO(node_->get_logger(), "DB Execution Error (insertCpmToCpmTable)");
+        RCLCPP_INFO(node_->get_logger(), sql_command.str().c_str());
+        RCLCPP_INFO(node_->get_logger(), err);
+        sqlite3_close(db);
+        sqlite3_free(err);
+        return;
+      }
+
+      sqlite3_close(db);
+    }
   }
 }

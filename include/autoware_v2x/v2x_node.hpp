@@ -46,6 +46,7 @@ namespace v2x
     CpmApplication *cpm_app;
     
     std::ofstream latency_log_file;
+    std::ofstream generation_time_log_file;
 
     vanetza::asn1::Cpm cpm_;
     vanetza::asn1::Cpm cpm_received_lte_;
