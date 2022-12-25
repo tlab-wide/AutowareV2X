@@ -73,7 +73,9 @@ namespace v2x {
 
   void CpmApplication::on_timer(Clock::time_point) {
     schedule_timer();
-    send();
+    
+    // Do not sent on interval
+    // send();
   }
 
   CpmApplication::PortType CpmApplication::port() {
@@ -458,6 +460,9 @@ namespace v2x {
     rclcpp::Time current_time = node_->now();
     // RCLCPP_INFO(node_->get_logger(), "[CpmApplication::updateObjectsStack] [measure] T_objstack_updated %ld", current_time.nanoseconds());
     updating_objects_list_ = false;
+
+    // Send CPM
+    send();
   }
 
   void CpmApplication::printObjectsList(int cpm_num) {
