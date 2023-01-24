@@ -8,8 +8,14 @@
       
       
       
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="rosbag-and-analysis/">
+      
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6">
     
     
       
@@ -17,11 +23,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.558e4712.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
-        
       
       
 
@@ -119,8 +124,6 @@
       <form class="md-header__option" data-md-component="palette">
         
           
-          
-          
           <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
           
             <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
@@ -128,8 +131,6 @@
             </label>
           
         
-          
-          
           
           <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="grey" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
           
@@ -168,7 +169,7 @@
           <div class="md-search-result__meta">
             Initializing search
           </div>
-          <ol class="md-search-result__list"></ol>
+          <ol class="md-search-result__list" role="presentation"></ol>
         </div>
       </div>
     </div>
@@ -342,8 +343,11 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
       
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
       
       
         
@@ -424,8 +428,9 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
       
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
       
       
         
@@ -472,8 +477,9 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" checked>
       
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" checked>
       
       
         
@@ -553,8 +559,11 @@
     <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" checked>
       
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
       
       
         
@@ -604,8 +613,11 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
       
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
       
       
         
@@ -648,8 +660,11 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
       
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
         
@@ -692,8 +707,11 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" checked>
       
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
       
       
         
@@ -841,6 +859,7 @@
                   
 
 
+
 <h1 id="running-autowarev2x-in-the-planning-simulator">Running AutowareV2X in the Planning Simulator<a class="headerlink" href="#running-autowarev2x-in-the-planning-simulator" title="Permanent link">#</a></h1>
 <p>Simulations can be an easy way of verifying the functionality of AutowareV2X before an actual field test.</p>
 <p>AutowareV2X can be run in a simulation environment using <a href="https://autowarefoundation.github.io/autoware-documentation/main/tutorials/ad-hoc-simulation/planning-simulation/">Autoware's Planning Simulator</a>. An ITS-S is composed of Autoware as the autonomous driving stack and AutowareV2X as its V2X communication stack. Each ITS-S is executed inside a Docker container, and the wireless communication medium between ITS-Ss are modeled with Docker networks. A dynamic ITS-S is defined as a CAV, while a static ITS-S is considered a RSU. Perceived Objects are sent out on the network as CPMs.</p>
@@ -853,18 +872,18 @@
 <p>We will be creating the Docker environment as depicted in the figure below. There will be two Docker containers to represent the two ITS-Ss, each of which includes Autoware.universe and AutowareV2X. They will both be a part of the Docker network called <code>v2x_net</code> with the subnet <code>10.0.0.0/24</code>. "Autoware Container #1" and "Autoware Container #2" will be described as <code>autoware_1</code> and <code>autoware_2</code> respectively.</p>
 <p><img alt="Docker Environment" src="docker-env.png" /></p>
 <h3 id="create-a-docker-network-for-v2x-communication">Create a Docker network for V2X communication<a class="headerlink" href="#create-a-docker-network-for-v2x-communication" title="Permanent link">#</a></h3>
-<div class="highlight"><pre><span></span><code>docker network create --driver<span class="o">=</span>bridge --subnet<span class="o">=</span><span class="m">10</span>.0.0.0/24 v2x_net -o com.docker.network.bridge.name<span class="o">=</span><span class="s2">&quot;v2x_net&quot;</span>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>network<span class="w"> </span>create<span class="w"> </span>--driver<span class="o">=</span>bridge<span class="w"> </span>--subnet<span class="o">=</span><span class="m">10</span>.0.0.0/24<span class="w"> </span>v2x_net<span class="w"> </span>-o<span class="w"> </span>com.docker.network.bridge.name<span class="o">=</span><span class="s2">&quot;v2x_net&quot;</span>
 </code></pre></div>
 <h3 id="launch-two-its-s-containers">Launch two ITS-S containers<a class="headerlink" href="#launch-two-its-s-containers" title="Permanent link">#</a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Here, we will use a Rocker extension called <a href="https://github.com/sloretz/off-your-rocker">off-your-rocker</a>.
 Install <code>off-your-rocker</code> by running the below:
-<div class="highlight"><pre><span></span><code>python3 -m pip install off-your-rocker
+<div class="highlight"><pre><span></span><code>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>off-your-rocker
 </code></pre></div></p>
 </div>
 <p>In one terminal, use rocker to launch container <code>autoware_1</code>:
-<div class="highlight"><pre><span></span><code>rocker --nvidia --x11 --user --privileged --volume <span class="nv">$HOME</span>/workspace/autoware_docker --volume <span class="nv">$HOME</span>/data --network<span class="o">=</span>v2x_net --name autoware_1 --oyr-run-arg <span class="s2">&quot;--ip 10.0.0.2 --hostname autoware_1&quot;</span> -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
+<div class="highlight"><pre><span></span><code>rocker<span class="w"> </span>--nvidia<span class="w"> </span>--x11<span class="w"> </span>--user<span class="w"> </span>--privileged<span class="w"> </span>--volume<span class="w"> </span><span class="nv">$HOME</span>/workspace/autoware_docker<span class="w"> </span>--volume<span class="w"> </span><span class="nv">$HOME</span>/data<span class="w"> </span>--network<span class="o">=</span>v2x_net<span class="w"> </span>--name<span class="w"> </span>autoware_1<span class="w"> </span>--oyr-run-arg<span class="w"> </span><span class="s2">&quot;--ip 10.0.0.2 --hostname autoware_1&quot;</span><span class="w"> </span>--<span class="w"> </span>ghcr.io/autowarefoundation/autoware-universe:latest-cuda
 </code></pre></div></p>
 <p>In another terminal, use rocker to launch container <code>autoware_2</code>:
 <div class="highlight"><pre><span></span><code>rocker --nvidia --x11 --user --privileged --volume $HOME/workspace/autoware_docker --volume $HOME/data --network=v2x_net --name autoware_2 --oyr-run-arg &quot;--ip 10.0.0.3 --hostname autoware_2&quot; -- ghcr.io/autowarefoundation/autoware-universe:latest-cuda
@@ -943,7 +962,7 @@ rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -r
 <div class="highlight"><pre><span></span><code>colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 </code></pre></div></li>
 <li>Download scenario.
-<div class="highlight"><pre><span></span><code>gdown -O ~/data/scenarios/ <span class="s1">&#39;https://drive.google.com/uc?id=1FXwSSWeFDTMz7qsG-J7pyJA6RgjksqCy&#39;</span>
+<div class="highlight"><pre><span></span><code>gdown<span class="w"> </span>-O<span class="w"> </span>~/data/scenarios/<span class="w"> </span><span class="s1">&#39;https://drive.google.com/uc?id=1FXwSSWeFDTMz7qsG-J7pyJA6RgjksqCy&#39;</span>
 </code></pre></div></li>
 <li>Launch <code>scenario_test_runner</code> and specify scenario.
 <div class="highlight"><pre><span></span><code>ros2 launch scenario_test_runner scenario_test_runner.launch.py map_path:=$HOME/data/maps/sample-map-planning sensor_model:=sample_sensor_kit vehicle_model:=sample_vehicle scenario:=$HOME/data/scenarios/busy_kashiwa_scenario.yaml launch_autoware:=true
@@ -970,42 +989,6 @@ rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -r
       
         <footer class="md-footer">
   
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Tutorials" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Tutorials
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="rosbag-and-analysis/" class="md-footer__link md-footer__link--next" aria-label="Next: Recording Rosbag and Tcpdump for Analysis" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Recording Rosbag and Tcpdump for Analysis
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
-  
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
@@ -1027,14 +1010,13 @@ rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -r
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top"], "search": "../../assets/javascripts/workers/search.e5c33ebb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      <script src="../../assets/javascripts/bundle.51d95adb.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
       
-    
     
   </body>
 </html>
