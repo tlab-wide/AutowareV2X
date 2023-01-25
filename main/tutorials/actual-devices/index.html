@@ -790,6 +790,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#equipments" class="md-nav__link">
+    Equipments
+  </a>
+  
+    <nav class="md-nav" aria-label="Equipments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hardware-for-the-rsu" class="md-nav__link">
+    Hardware for the RSU
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardware-for-the-cav" class="md-nav__link">
+    Hardware for the CAV
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#autoware-pc" class="md-nav__link">
     Autoware PC
   </a>
@@ -867,6 +894,82 @@ In terms of the software that comprises the RSU and CAV, they are both very simi
 </ul>
 <p>In this tutorial, we will explain how to set this up. Depending on the number of CPM senders or receivers you need, you will need to make more copies of the same setup. </p>
 <p><img src="../../figs/exp-setup_v2.png" width="800"/></p>
+<h2 id="equipments">Equipments<a class="headerlink" href="#equipments" title="Permanent link">#</a></h2>
+<p>The details for the equipment used in the setup is shown in the tables below.</p>
+<h3 id="hardware-for-the-rsu">Hardware for the RSU<a class="headerlink" href="#hardware-for-the-rsu" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Purpose</th>
+<th>Device</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AutowareV2X PC</td>
+<td>Intel NUC, Model: 11Pro</td>
+<td>OS: Ubuntu 20.04, ROS: Galactic, Software: AutowareV2X</td>
+</tr>
+<tr>
+<td>Autoware PC</td>
+<td>Gtune PC, Model: H5</td>
+<td>OS: Ubuntu 20.04, ROS: Galactic, Software: Autoware.universe</td>
+</tr>
+<tr>
+<td>Wi-Fi Network Interface</td>
+<td>Netgear Wi-Fi Dongle, Model: A6210</td>
+<td>Dual-band: 802.11b/g/n (2.4GHz), 802.11a/n/ac (5GHz)</td>
+</tr>
+<tr>
+<td>4G/LTE Network Interface</td>
+<td>IDY IoM 5G Gateway, Model: iR730B</td>
+<td>Bands: 3G, 4G, 5G, nano PSIM, 4x high-performance active antennas</td>
+</tr>
+<tr>
+<td>Sensor</td>
+<td>VLP16 3D LiDAR</td>
+<td>Range: 100 m, Accuracy: +/- 3 cm, Rotation rate: 5-20 Hz, 16 channels</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hardware-for-the-cav">Hardware for the CAV<a class="headerlink" href="#hardware-for-the-cav" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Purpose</th>
+<th>Device</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AutowareV2X PC</td>
+<td>Intel NUC, Model: 11Pro</td>
+<td>OS: Ubuntu 20.04, ROS: Galactic, Software: AutowareV2X</td>
+</tr>
+<tr>
+<td>Autoware PC</td>
+<td>Gigabyte PC, Model: AERO-15</td>
+<td>OS: Ubuntu 20.04, ROS: Galactic, Software: Autoware.universe</td>
+</tr>
+<tr>
+<td>Wi-Fi Network Interface</td>
+<td>Netgear Wi-Fi Dongle, Model: A6210</td>
+<td>Dual-band: 802.11b/g/n (2.4GHz), 802.11a/n/ac (5GHz)</td>
+</tr>
+<tr>
+<td>4G/LTE Network Interface</td>
+<td>IDY IoM 5G Gateway, Model: iR730B</td>
+<td>Bands: 3G, 4G, 5G, nano PSIM, 4x high-performance active antennas</td>
+</tr>
+<tr>
+<td>Vehicle</td>
+<td>Model: Yamaha G30Es-Li</td>
+<td>Speed: less than 20 km/h, Sensor: VLP16 3D LiDAR (Rooftop)</td>
+</tr>
+</tbody>
+</table>
 <h2 id="autoware-pc">Autoware PC<a class="headerlink" href="#autoware-pc" title="Permanent link">#</a></h2>
 <ol>
 <li>
