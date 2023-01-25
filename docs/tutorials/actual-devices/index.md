@@ -19,6 +19,30 @@ In this tutorial, we will explain how to set this up. Depending on the number of
 
 <img src="../../figs/exp-setup_v2.png" width="800"/>
 
+## Equipments
+
+The details for the equipment used in the setup is shown in the tables below.
+
+### Hardware for the RSU
+
+| Purpose | Device      | Specification |
+| ----------- | ----------- | -----------  |
+| AutowareV2X PC | Intel NUC, Model: 11Pro      | OS: Ubuntu 20.04, ROS: Galactic, Software: AutowareV2X       |
+| Autoware PC | Gtune PC, Model: H5| OS: Ubuntu 20.04, ROS: Galactic, Software: Autoware.universe | 
+| Wi-Fi Network Interface | Netgear Wi-Fi Dongle, Model: A6210 | Dual-band: 802.11b/g/n (2.4GHz), 802.11a/n/ac (5GHz) |
+| 4G/LTE Network Interface | IDY IoM 5G Gateway, Model: iR730B | Bands: 3G, 4G, 5G, nano PSIM, 4x high-performance active antennas |
+| Sensor | VLP16 3D LiDAR | Range: 100 m, Accuracy: +/- 3 cm, Rotation rate: 5-20 Hz, 16 channels |
+
+### Hardware for the CAV
+
+| Purpose | Device      | Specification |
+| ----------- | ----------- | -----------  |
+| AutowareV2X PC | Intel NUC, Model: 11Pro      | OS: Ubuntu 20.04, ROS: Galactic, Software: AutowareV2X       |
+| Autoware PC | Gigabyte PC, Model: AERO-15 | OS: Ubuntu 20.04, ROS: Galactic, Software: Autoware.universe | 
+| Wi-Fi Network Interface | Netgear Wi-Fi Dongle, Model: A6210 | Dual-band: 802.11b/g/n (2.4GHz), 802.11a/n/ac (5GHz) |
+| 4G/LTE Network Interface | IDY IoM 5G Gateway, Model: iR730B | Bands: 3G, 4G, 5G, nano PSIM, 4x high-performance active antennas |
+| Vehicle | Model: Yamaha G30Es-Li | Speed: less than 20 km/h, Sensor: VLP16 3D LiDAR (Rooftop) |
+
 ## Autoware PC
 
 1. For the Autoware PC, you can follow the [normal installation procedures for Autoware.universe](https://autowarefoundation.github.io/autoware-documentation/main/installation/autoware/source-installation/). A PC with a discrete GPU is recommended for better performance with sensor processing and object detection.
