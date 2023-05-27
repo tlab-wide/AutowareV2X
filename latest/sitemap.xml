@@ -1,78 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/about/document-build/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/design/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/design/architecture/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/how-to-guides/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/installation/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/installation/docker-installation/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/installation/source-installation/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/support/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/support/docs-guide/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/tutorials/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/tutorials/actual-devices/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/tutorials/planning-simulation/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/tutorials/planning-simulation/network-emulation/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2023-04-18</lastmod>
+         <loc>https://tlab-wide.github.io/AutowareV2X/latest/tutorials/planning-simulation/rosbag-and-analysis/</loc>
+         <lastmod>2023-05-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
