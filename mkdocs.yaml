@@ -1,4 +1,9 @@
 site_name: AutowareV2X Documentation
+site_url: https://tlab-wide.github.io/AutowareV2X
+repo_url: https://github.com/tlab-wide/AutowareV2X
+docs_dir: docs
+copyright: Copyright &copy; 2023 Yu Asabe
+
 theme:
   name: material
   features:
