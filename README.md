@@ -1,4 +1,5 @@
 # AutowareV2X
+![Collective_Perception_between_RSU_and_Vehicle_using_Autoware (2)](https://github.com/tlab-wide/AutowareV2X/assets/3140505/8662b65b-99af-4793-8c4c-62d457fc9e62)
 
 
 AutowareV2X is an open-source module that can be added onto the newest Autoware.universe to enable V2X communication. If you find this code useful in your research, please consider citing :
@@ -16,7 +17,9 @@ It utilizes Vanetza as the protocol suite for ETSI C-ITS standards.
 
 We have also provided a working example of a CPM application where Collective Perception Messages can be used to exchange perception information in Autoware.
 
-<a href="https://www.youtube.com/watch?v=57fx3-gUNxU"><img width="695" alt="image" src="https://github.com/tlab-wide/AutowareV2X/assets/3140505/4a1a6987-a5be-4ad5-86cf-efda8e8bc210"></a>
+
+
+
 
 ![AutowareV2X Architecture](./docs/figs/autowarev2x_architecture_v2.png)
 
