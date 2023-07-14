@@ -1,6 +1,5 @@
 # AutowareV2X
-![Collective_Perception_between_RSU_and_Vehicle_using_Autoware (2)](https://github.com/tlab-wide/AutowareV2X/assets/3140505/8662b65b-99af-4793-8c4c-62d457fc9e62)
-
+[![Collective_Perception_between_RSU_and_Vehicle_using_Autoware (2)](https://github-production-user-asset-6210df.s3.amazonaws.com/3140505/253303730-8662b65b-99af-4793-8c4c-62d457fc9e62.gif)](https://youtu.be/57fx3-gUNxU)
 
 AutowareV2X is an open-source module that can be added onto the newest Autoware.universe to enable V2X communication. If you find this code useful in your research, please consider citing :
 
