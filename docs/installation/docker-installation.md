@@ -1,6 +1,6 @@
 # Docker Installation
 
-In order to run the simulations explained in the [Tutorials](/tutorials) section, you will need to proceed with the Docker installation.
+In order to run the simulations explained in the [Tutorials](../tutorials/index.md) section, you will need to proceed with the Docker installation.
 
 !!! Note
     Also refer to [Autoware's Docker Installation](https://autowarefoundation.github.io/autoware-documentation/main/installation/autoware/docker-installation/) for the Docker-based installation of Autoware.universe.
