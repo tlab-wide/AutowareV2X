@@ -10,13 +10,16 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>autoware_auto_perception_msgs</depend>
-  <depend>tf2_msgs</depend> 
+  <depend>autoware_auto_vehicle_msgs</depend>
+  <depend>autoware_adapi_v1_msgs</depend>
+  <depend>tf2_msgs</depend>
   <depend>tf2</depend>
   <depend>geometry_msgs</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>rclcpp_components</depend>
   <depend>Vanetza</depend>
+  <depend>etsi_its_messages</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

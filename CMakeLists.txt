@@ -22,19 +22,26 @@ set(VANETZA_INSTALL ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 find_package(Vanetza REQUIRED)
 find_package(GeographicLib 1.37 REQUIRED)
-find_package(Boost COMPONENTS thread REQUIRED)
+find_package(Boost COMPONENTS thread program_options REQUIRED)
+find_package(etsi_its_cam_ts_coding REQUIRED)
+find_package(etsi_its_cam_ts_conversion REQUIRED)
 ament_auto_find_build_dependencies()
 find_package(std_msgs REQUIRED)
+find_package(Protobuf REQUIRED)
 
 include_directories(
   include
+  ${CMAKE_CURRENT_BINARY_DIR}/src
+  ../etsi_its_messages/etsi_its_msgs_utils/include
 )
 
-ament_auto_add_library(autoware_v2x SHARED
+set(SOURCES
   src/v2x_node.cpp
   src/v2x_app.cpp
   src/application.cpp
   src/cpm_application.cpp
+  src/cam_application.cpp
+  src/cube_evk_link.cpp
   src/ethernet_device.cpp
   src/link_layer.cpp
   src/raw_socket_link.cpp
@@ -45,7 +52,38 @@ ament_auto_add_library(autoware_v2x SHARED
   src/security.cpp
 )
 
-target_link_libraries(autoware_v2x Vanetza::vanetza ${GeographicLib_LIBRARIES} Boost::thread sqlite3)
+if(DEFINED BUILD_COHDA)
+  set(SEARCH_PATHS
+    "/v2x/cohda/llc"
+    "/usr/include/linux/cohda/llc"
+    "/usr/include/cohda/llc"
+  )
+  find_file(COHDA_LLC_API_HEADER llc-api.h
+    PATHS ${SEARCH_PATHS}
+    CMAKE_FIND_ROOT_PATH_BOTH
+    DOC "Cohda LLC API header"
+  )
+  mark_as_advanced(COHDA_LLC_API_HEADER)
+  if(COHDA_LLC_API_HEADER)
+    get_filename_component(COHDA_LLC_INCLUDE_DIR ${COHDA_LLC_API_HEADER} DIRECTORY)
+    include_directories(
+      include
+      ${CMAKE_CURRENT_BINARY_DIR}/src
+      ${COHDA_LLC_INCLUDE_DIR}
+    )
+    list(APPEND SOURCES src/cohda_link.cpp)
+    add_compile_definitions(BUILD_COHDA)
+  else()
+    string(REPLACE ";" " " SEARCH_PATHS_STR "${SEARCH_PATHS}")
+    message(WARNING "Cohda LLC API header not found, could not enable Cohda support.\nSearched in: ${SEARCH_PATHS_STR}")
+  endif()
+endif()
+
+ament_auto_add_library(autoware_v2x SHARED ${SOURCES})
+
+protobuf_generate(TARGET autoware_v2x PROTOS src/cube_evk_radio.proto)
+
+target_link_libraries(autoware_v2x Vanetza::vanetza ${GeographicLib_LIBRARIES} Boost::thread Boost::program_options sqlite3 etsi_its_cam_ts_coding::etsi_its_cam_ts_coding etsi_its_cam_ts_conversion::etsi_its_cam_ts_conversion protobuf::libprotobuf)
 
 rclcpp_components_register_node(autoware_v2x
   PLUGIN "v2x::V2XNode"

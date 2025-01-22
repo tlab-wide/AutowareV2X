@@ -9,7 +9,6 @@
 #include <memory>
 
 std::unique_ptr<vanetza::security::SecurityEntity>
-create_security_entity(const vanetza::Runtime&, vanetza::PositionProvider&);
+create_security_entity(const boost::program_options::variables_map&, const vanetza::Runtime&, vanetza::PositionProvider&);
 
 #endif /* SECURITY_HPP_FV13ZIYA */
-

@@ -6,11 +6,16 @@
 #include "autoware_v2x/security.hpp"
 #include "autoware_v2x/link_layer.hpp"
 #include "autoware_v2x/cpm_application.hpp"
+#include "autoware_v2x/cam_application.hpp"
+
+#include "autoware_adapi_v1_msgs/srv/get_vehicle_dimensions.hpp"
+#include "autoware_adapi_v1_msgs/msg/vehicle_dimensions.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
 #include <vanetza/asn1/cpm.hpp>
+#include <vanetza/asn1/cam.hpp>
 #include <sstream>
 #include <memory>
 #include <boost/thread.hpp>
@@ -31,15 +36,37 @@ namespace v2x
   V2XNode::V2XNode(const rclcpp::NodeOptions &node_options) : rclcpp::Node("autoware_v2x_node", node_options) {
     using std::placeholders::_1;
 
+    int timeout = 10;
+    get_vehicle_dimensions_ = this->create_client<autoware_adapi_v1_msgs::srv::GetVehicleDimensions>("/api/vehicle/dimensions");
+    if (get_vehicle_dimensions_->wait_for_service(std::chrono::seconds(timeout))) {
+      RCLCPP_INFO(get_logger(), "[V2XNode::V2XNode] Service /api/vehicle/dimensions is now available.");
+      vehicle_dimensions_available_ = true;
+    } else {
+      RCLCPP_ERROR(get_logger(), "[V2XNode::V2XNode] Service /api/vehicle/dimensions is not available after waiting (timeout=%ds).", timeout);
+      vehicle_dimensions_available_ = false;
+    }
+
     objects_sub_ = this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>("/perception/object_recognition/objects", 10, std::bind(&V2XNode::objectsCallback, this, _1));
     tf_sub_ = this->create_subscription<tf2_msgs::msg::TFMessage>("/tf", 10, std::bind(&V2XNode::tfCallback, this, _1));
+
+    // Topic subscriptions for CAMApplication
+    velocity_report_sub_ = this->create_subscription<autoware_auto_vehicle_msgs::msg::VelocityReport>("/vehicle/status/velocity_status", 10, std::bind(&V2XNode::velocityReportCallback, this, _1));
+    gear_report_sub_ = this->create_subscription<autoware_auto_vehicle_msgs::msg::GearReport>("/vehicle/status/gear_status", 10, std::bind(&V2XNode::gearReportCallback, this, _1));
+    steering_report_sub_ = this->create_subscription<autoware_auto_vehicle_msgs::msg::SteeringReport>("/vehicle/status/steering_status", 10, std::bind(&V2XNode::steeringReportCallback, this, _1));
 
     cpm_objects_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/objects", rclcpp::QoS{10});
     // cpm_sender_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/sender", rclcpp::QoS{10});
 
+    cam_rec_pub_ = create_publisher<etsi_its_cam_ts_msgs::msg::CAM>("/v2x/cam_ts/received", rclcpp::QoS{10});
+
     // Declare Parameters
-    this->declare_parameter<std::string>("network_interface", "vmnet1");
-    this->declare_parameter<bool>("is_sender", true);
+    this->declare_parameter<std::string>("link_layer", "ethernet");
+    this->declare_parameter<std::string>("target_device", "lo");
+    this->declare_parameter<bool>("is_sender");
+    this->declare_parameter<bool>("publish_own_cams");
+    this->declare_parameter<bool>("cam_enabled");
+    this->declare_parameter<bool>("cpm_enabled");
+    this->declare_parameter<std::string>("security", "none");
 
     // Launch V2XApp in a new thread
     app = new V2XApp(this);
@@ -150,6 +177,11 @@ namespace v2x
     cpm_objects_pub_->publish(output_dynamic_object_msg);
   }
 
+  void V2XNode::publishReceivedCam(etsi_its_cam_ts_msgs::msg::CAM &msg) {
+    RCLCPP_INFO(get_logger(), "Publishing CAM to ROS network");
+    cam_rec_pub_->publish(msg);
+  }
+
   void V2XNode::objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
     rclcpp::Time msg_time = msg->header.stamp; // timestamp included in the Autoware Perception Msg.
 
@@ -163,6 +195,43 @@ namespace v2x
 
   void V2XNode::tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg) {
     app->tfCallback(msg);
+  }
+
+  void V2XNode::velocityReportCallback(const autoware_auto_vehicle_msgs::msg::VelocityReport::ConstSharedPtr msg) {
+    app->velocityReportCallback(msg);
+  }
+
+  void V2XNode::gearReportCallback(const autoware_auto_vehicle_msgs::msg::GearReport::ConstSharedPtr msg) {
+    app->gearReportCallback(msg);
+  }
+
+  void V2XNode::steeringReportCallback(const autoware_auto_vehicle_msgs::msg::SteeringReport::ConstSharedPtr msg) {
+    app->steeringReportCallback(msg);
+  }
+
+  void V2XNode::getVehicleDimensions() {
+    if (!vehicle_dimensions_available_) {
+      RCLCPP_ERROR(get_logger(), "[V2XNode::getVehicleDimensions] Service /api/vehicle/dimensions is not available.");
+      return;
+    }
+    RCLCPP_INFO(get_logger(), "[V2XNode::getVehicleDimensions] Sending service request to /api/vehicle/dimensions");
+    auto request = std::make_shared<autoware_adapi_v1_msgs::srv::GetVehicleDimensions::Request>();
+    auto future_result = get_vehicle_dimensions_->async_send_request(request, [this](rclcpp::Client<autoware_adapi_v1_msgs::srv::GetVehicleDimensions>::SharedFuture future) {
+      try {
+        auto response = future.get();
+        RCLCPP_INFO(get_logger(), "[V2XNode::getVehicleDimensions] Received response from /api/vehicle/dimensions");
+        try {
+          auto dimensions = response->dimensions;
+          RCLCPP_INFO(get_logger(), "[V2XNode::getVehicleDimensions] Received vehicle dimensions: height=%f, wheel_base=%f, wheel_tread=%f", dimensions.height, dimensions.wheel_base, dimensions.wheel_tread);
+          app->cam->setVehicleDimensions(dimensions);
+        } catch (const std::exception &e) {
+          RCLCPP_ERROR(get_logger(), "[V2XNode::getVehicleDimensions] Service response of /api/vehicle/dimensions failed: %s", e.what());
+        }
+      }
+      catch (const std::exception &e) {
+        RCLCPP_ERROR(get_logger(), "[V2XNode::getVehicleDimensions] Service call of /api/vehicle/dimensions failed: %s", e.what());
+      }
+    });
   }
 }
 

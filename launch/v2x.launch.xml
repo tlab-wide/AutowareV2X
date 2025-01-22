@@ -1,6 +1,11 @@
 <launch>
-  <arg name="network_interface" default="wlp5s0"/>
+  <arg name="link_layer" default="ethernet"/>
+  <arg name="target_device" default="lo"/>
   <arg name="is_sender" default="true"/>
+  <arg name="publish_own_cams" default="false"/>
+  <arg name="cam_enabled" default="true"/>
+  <arg name="cpm_enabled" default="true"/>
+  <arg name="security" default="none"/>
   <node pkg="autoware_v2x" exec="autoware_v2x_node" namespace="v2x" output="screen">
     <param from="$(find-pkg-share autoware_v2x)/config/autoware_v2x.param.yaml"/>
   </node>

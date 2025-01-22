@@ -22,8 +22,7 @@ class LinkLayer : public vanetza::access::Interface, public LinkLayerIndication
 {
 };
 
-std::unique_ptr<LinkLayer>
-create_link_layer(boost::asio::io_service&, const EthernetDevice&, const std::string& name);
+std::unique_ptr<LinkLayer> create_link_layer(boost::asio::io_service &io_service, const std::string &name, const EthernetDevice &target_device);
+std::unique_ptr<LinkLayer> create_link_layer(boost::asio::io_service &io_service, const std::string &name, const std::string &target_device);
 
 #endif /* LINK_LAYER_HPP_FGEK0QTH */
-

@@ -1,4 +1,13 @@
 /**:
   ros__parameters:
-    network_interface: "wlp4s0"
+    link_layer: "ethernet" # "ethernet" | "cube-evk" | "cohda"
+    target_device: "lo" # Should be the IP address of the target device or the network interface name
     is_sender: true
+    publish_own_cams: false
+    cam_enabled: true
+    cpm_enabled: false
+    security: "none"
+    certificate: ""
+    certificate-key: ""
+    certificate-chain:
+      - ""
