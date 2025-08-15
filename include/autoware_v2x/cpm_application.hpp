@@ -5,7 +5,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include "autoware_auto_perception_msgs/msg/predicted_objects.hpp"
+#include "autoware_perception_msgs/msg/predicted_objects.hpp"
 #include "autoware_v2x/positioning.hpp"
 #include <vanetza/asn1/cpm.hpp>
 
@@ -20,8 +20,8 @@ namespace v2x
         std::string uuidToHexString(const unique_identifier_msgs::msg::UUID&);
         void indicate(const DataIndication &, UpPacketPtr) override;
         void set_interval(vanetza::Clock::duration);
-        void setAllObjectsOfPersonsAnimalsToSend(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
-        void updateObjectsList(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
+        void setAllObjectsOfPersonsAnimalsToSend(const autoware_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
+        void updateObjectsList(const autoware_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
         void updateMGRS(double *, double *);
         void updateRP(double *, double *, double *);
         void updateGenerationTime(int *, long *);

@@ -3,7 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "autoware_auto_perception_msgs/msg/predicted_objects.hpp"
+#include "autoware_perception_msgs/msg/predicted_objects.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 #include <boost/asio/io_service.hpp>
 #include "autoware_v2x/cpm_application.hpp"
@@ -23,7 +23,7 @@ namespace v2x
   public:
     V2XApp(V2XNode *);
     void start();
-    void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
+    void objectsCallback(const autoware_perception_msgs::msg::PredictedObjects::ConstSharedPtr);
     void tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr);
 
     CpmApplication *cp;

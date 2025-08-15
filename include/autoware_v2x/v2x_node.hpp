@@ -3,7 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "autoware_auto_perception_msgs/msg/predicted_objects.hpp"
+#include "autoware_perception_msgs/msg/predicted_objects.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 #include <boost/asio/io_service.hpp>
 #include "autoware_v2x/v2x_app.hpp"
@@ -29,13 +29,13 @@ namespace v2x
     std::ofstream latency_log_file;
 
   private:
-    void objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);
+    void objectsCallback(const autoware_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg);
     void tfCallback(const tf2_msgs::msg::TFMessage::ConstSharedPtr msg);
 
-    rclcpp::Subscription<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr objects_sub_;
+    rclcpp::Subscription<autoware_perception_msgs::msg::PredictedObjects>::SharedPtr objects_sub_;
     rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tf_sub_;
-    rclcpp::Publisher<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr cpm_objects_pub_;
-    rclcpp::Publisher<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr cpm_sender_pub_;
+    rclcpp::Publisher<autoware_perception_msgs::msg::PredictedObjects>::SharedPtr cpm_objects_pub_;
+    rclcpp::Publisher<autoware_perception_msgs::msg::PredictedObjects>::SharedPtr cpm_sender_pub_;
 
     double pos_lat_;
     double pos_lon_;

@@ -101,7 +101,7 @@ namespace v2x {
 
 
       // Calculate GDT and get GDT from CPM and calculate the "Age of CPM"
-      TimestampIts_t gt_cpm = message->cpm.generationTime;
+      GenerationDeltaTime_t gt_cpm = message->cpm.generationDeltaTime;
       // const auto time_now = duration_cast<milliseconds> (runtime_.now().time_since_epoch());
       // uint16_t gdt = time_now.count();
       // int gdt_diff = (65536 + (gdt - gdt_cpm) % 65536) % 65536;
@@ -227,9 +227,9 @@ namespace v2x {
     ego_.heading = *yaw;
   }
 
-  void CpmApplication::setAllObjectsOfPersonsAnimalsToSend(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
+  void CpmApplication::setAllObjectsOfPersonsAnimalsToSend(const autoware_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
     if (msg->objects.size() > 0) {
-      for (autoware_auto_perception_msgs::msg::PredictedObject obj : msg->objects) {
+      for (autoware_perception_msgs::msg::PredictedObject obj : msg->objects) {
         std::string object_uuid = uuidToHexString(obj.object_id);
         auto found_object = std::find_if(objectsList.begin(), objectsList.end(), [&](auto const &e) {
           return !strcmp(e.uuid.c_str(), object_uuid.c_str());
@@ -245,7 +245,7 @@ namespace v2x {
     }
   }
 
-  void CpmApplication::updateObjectsList(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
+  void CpmApplication::updateObjectsList(const autoware_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
     updating_objects_list_ = true;
 
     // Flag all objects as NOT_SEND
@@ -257,7 +257,7 @@ namespace v2x {
     }
 
     if (msg->objects.size() > 0) {
-      for (autoware_auto_perception_msgs::msg::PredictedObject obj : msg->objects) {
+      for (autoware_perception_msgs::msg::PredictedObject obj : msg->objects) {
 
         // RCLCPP_INFO(node_->get_logger(), "%d", obj.classification.front().label);
         double existence_probability = obj.existence_probability;
@@ -321,7 +321,7 @@ namespace v2x {
             // Object was already in internal memory
 
             // Object belongs to class person or animal
-            if (obj.classification.front().label == autoware_auto_perception_msgs::msg::ObjectClassification::PEDESTRIAN || obj.classification.front().label == autoware_auto_perception_msgs::msg::ObjectClassification::UNKNOWN) {
+            if (obj.classification.front().label == autoware_perception_msgs::msg::ObjectClassification::PEDESTRIAN || obj.classification.front().label == autoware_perception_msgs::msg::ObjectClassification::UNKNOWN) {
 
               if (include_all_persons_and_animals_) {
                 found_object->to_send = true;
@@ -460,7 +460,7 @@ namespace v2x {
 
       // Set GenerationTime
       RCLCPP_INFO(node_->get_logger(), "[CpmApplication::send] %ld", gdt_timestamp_);
-      asn_long2INTEGER(&cpm.generationTime, (long) gdt_timestamp_);
+      cpm.generationDeltaTime = generationTime_;
 
       CpmManagementContainer_t &management = cpm.cpmParameters.managementContainer;
       management.stationType = StationType_passengerCar;

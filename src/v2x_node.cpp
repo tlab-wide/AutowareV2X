@@ -31,11 +31,11 @@ namespace v2x
   V2XNode::V2XNode(const rclcpp::NodeOptions &node_options) : rclcpp::Node("autoware_v2x_node", node_options) {
     using std::placeholders::_1;
 
-    objects_sub_ = this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>("/perception/object_recognition/objects", 10, std::bind(&V2XNode::objectsCallback, this, _1));
+    objects_sub_ = this->create_subscription<autoware_perception_msgs::msg::PredictedObjects>("/perception/object_recognition/objects", 10, std::bind(&V2XNode::objectsCallback, this, _1));
     tf_sub_ = this->create_subscription<tf2_msgs::msg::TFMessage>("/tf", 10, std::bind(&V2XNode::tfCallback, this, _1));
 
-    cpm_objects_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/objects", rclcpp::QoS{10});
-    // cpm_sender_pub_ = create_publisher<autoware_auto_perception_msgs::msg::PredictedObjects>("/v2x/cpm/sender", rclcpp::QoS{10});
+    cpm_objects_pub_ = create_publisher<autoware_perception_msgs::msg::PredictedObjects>("/v2x/cpm/objects", rclcpp::QoS{10});
+    // cpm_sender_pub_ = create_publisher<autoware_perception_msgs::msg::PredictedObjects>("/v2x/cpm/sender", rclcpp::QoS{10});
 
     // Declare Parameters
     this->declare_parameter<std::string>("network_interface", "vmnet1");
@@ -60,21 +60,21 @@ namespace v2x
   }
 
   void V2XNode::publishCpmSenderObject(double x_mgrs, double y_mgrs, double orientation) {
-    autoware_auto_perception_msgs::msg::PredictedObjects cpm_sender_object_msg;
+    autoware_perception_msgs::msg::PredictedObjects cpm_sender_object_msg;
     std_msgs::msg::Header header;
     rclcpp::Time current_time = this->now();
     cpm_sender_object_msg.header.frame_id = "map";
     cpm_sender_object_msg.header.stamp = current_time;
 
-    autoware_auto_perception_msgs::msg::PredictedObject object;
-    autoware_auto_perception_msgs::msg::ObjectClassification classification;
-    autoware_auto_perception_msgs::msg::Shape shape;
-    autoware_auto_perception_msgs::msg::PredictedObjectKinematics kinematics;
+    autoware_perception_msgs::msg::PredictedObject object;
+    autoware_perception_msgs::msg::ObjectClassification classification;
+    autoware_perception_msgs::msg::Shape shape;
+    autoware_perception_msgs::msg::PredictedObjectKinematics kinematics;
 
-    classification.label = autoware_auto_perception_msgs::msg::ObjectClassification::CAR;
+    classification.label = autoware_perception_msgs::msg::ObjectClassification::CAR;
     classification.probability = 0.99;
 
-    shape.type = autoware_auto_perception_msgs::msg::Shape::BOUNDING_BOX;
+    shape.type = autoware_perception_msgs::msg::Shape::BOUNDING_BOX;
     shape.dimensions.x = 5.0;
     shape.dimensions.y = 2.0;
     shape.dimensions.z = 1.7;
@@ -102,22 +102,22 @@ namespace v2x
   }
 
   void V2XNode::publishObjects(std::vector<CpmApplication::Object> *objectsStack, int cpm_num) {
-    autoware_auto_perception_msgs::msg::PredictedObjects output_dynamic_object_msg;
+    autoware_perception_msgs::msg::PredictedObjects output_dynamic_object_msg;
     std_msgs::msg::Header header;
     rclcpp::Time current_time = this->now();
     output_dynamic_object_msg.header.frame_id = "map";
     output_dynamic_object_msg.header.stamp = current_time;
 
     for (CpmApplication::Object obj : *objectsStack) {
-      autoware_auto_perception_msgs::msg::PredictedObject object;
-      autoware_auto_perception_msgs::msg::ObjectClassification classification;
-      autoware_auto_perception_msgs::msg::Shape shape;
-      autoware_auto_perception_msgs::msg::PredictedObjectKinematics kinematics;
+      autoware_perception_msgs::msg::PredictedObject object;
+      autoware_perception_msgs::msg::ObjectClassification classification;
+      autoware_perception_msgs::msg::Shape shape;
+      autoware_perception_msgs::msg::PredictedObjectKinematics kinematics;
 
-      classification.label = autoware_auto_perception_msgs::msg::ObjectClassification::CAR;
+      classification.label = autoware_perception_msgs::msg::ObjectClassification::CAR;
       classification.probability = 0.99;
 
-      shape.type = autoware_auto_perception_msgs::msg::Shape::BOUNDING_BOX;
+      shape.type = autoware_perception_msgs::msg::Shape::BOUNDING_BOX;
       shape.dimensions.x = obj.shape_x / 10.0;
       shape.dimensions.y = obj.shape_y / 10.0;
       shape.dimensions.z = obj.shape_z / 10.0;
@@ -150,7 +150,7 @@ namespace v2x
     cpm_objects_pub_->publish(output_dynamic_object_msg);
   }
 
-  void V2XNode::objectsCallback(const autoware_auto_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
+  void V2XNode::objectsCallback(const autoware_perception_msgs::msg::PredictedObjects::ConstSharedPtr msg) {
     rclcpp::Time msg_time = msg->header.stamp; // timestamp included in the Autoware Perception Msg.
 
     std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds> (
